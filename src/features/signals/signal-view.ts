@@ -8,6 +8,12 @@ import {
   type Signal,
 } from "@/core/domain";
 import type { BadgeTone } from "@/ui/primitives/badge";
+import {
+  overdueDaysOf,
+  timeGroupOf,
+  type TimeGroup,
+} from "@/core/services/queue-groups";
+import { DEFAULT_RULES } from "@/core/services/rules.config";
 import type { SignalOutcome } from "@/ui/patterns/signal-card";
 import {
   formatDelta,
@@ -61,6 +67,10 @@ export interface SignalView {
   readonly doneLabel: string;
   readonly outcome: SignalOutcome;
   readonly deadline?: { label: string; urgent: boolean };
+  /** Kuyruğun zaman grubu — son karar tarihinden türetilir, şiddetten değil. */
+  readonly timeGroup: TimeGroup;
+  /** Kaç gün gecikildi. Gecikme yoksa 0. */
+  readonly overdueDays: number;
   readonly severityLabel: string;
   readonly severityTone: BadgeTone;
   /**
@@ -157,19 +167,24 @@ function buildDeadline(
   signal: Signal,
   locale: string,
   t: SignalTranslators,
+  overdueDays: number,
 ): { label: string; urgent: boolean } | undefined {
   if (!signal.deadline) return undefined;
 
-  // Son gün bugün ya da geçmişse acele vurgusu; "3 gün sonra" sakin kalır.
-  const urgent = signal.deadline <= signal.detectedAt;
-
+  // Üç ayrı durum: gecikti / bugün / ileri tarihli.
+  // "Gecikti" ile "bugün"ü aynı etikete sıkıştırmak, geciken işin
+  // geciktiğini gizlerdi.
+  if (overdueDays > 0) {
+    return { label: t.outcome("deadlineOverdue", { days: overdueDays }), urgent: true };
+  }
+  if (signal.deadline === signal.detectedAt) {
+    return { label: t.outcome("deadlineToday"), urgent: true };
+  }
   return {
-    label: urgent
-      ? t.outcome("deadlineToday")
-      : t.outcome("deadlineOn", {
-          date: formatShortDate(signal.deadline, locale),
-        }),
-    urgent,
+    label: t.outcome("deadlineOn", {
+      date: formatShortDate(signal.deadline, locale),
+    }),
+    urgent: false,
   };
 }
 
@@ -181,7 +196,11 @@ export function toSignalView(
 ): SignalView {
   const subject =
     signal.subject.type === "product" ? signal.subject.label : t.subject("store");
-  const deadline = buildDeadline(signal, locale, t);
+
+  // Gruplama ve gecikme, sinyalin bildiği "bugün" üzerinden hesaplanır —
+  // mağazanın saat dilimindeki gün, sunucunun UTC günü değil.
+  const overdueDays = overdueDaysOf(signal.deadline, signal.detectedAt);
+  const deadline = buildDeadline(signal, locale, t, overdueDays);
 
   return {
     id: signal.id,
@@ -192,6 +211,12 @@ export function toSignalView(
     doneLabel: t.done(signal.code),
     outcome: buildOutcome(signal, locale, t),
     ...(deadline ? { deadline } : {}),
+    timeGroup: timeGroupOf(
+      signal.deadline,
+      signal.detectedAt,
+      DEFAULT_RULES.inventory.decisionHorizonDays,
+    ),
+    overdueDays,
     severityLabel: t.severity(signal.severity),
     severityTone: SEVERITY_TONE[signal.severity],
     profitGainMinor: profitGainOf(signal).minor,

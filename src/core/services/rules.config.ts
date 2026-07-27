@@ -35,6 +35,13 @@ export interface InventoryRules {
    * süresi belirler, keyfî bir sayı değil.
    */
   readonly forecastHorizonDays: number;
+  /**
+   * "Bu hafta" grubunun uzunluğu ve tarihi belirsiz işlere verilen süre.
+   *
+   * Bugün patlamayan ama sürüncemede bırakılmaması gereken işler (marj
+   * erozyonu, yüksek iade, sönen trend) bu kadar gün sonrasına tarihlenir.
+   */
+  readonly decisionHorizonDays: number;
 }
 
 export interface RiskRules {
@@ -100,6 +107,7 @@ export const DEFAULT_RULES: RulesConfig = {
   inventory: {
     supplyLeadTimeDays: 7,
     forecastHorizonDays: 30,
+    decisionHorizonDays: 7,
   },
 
   risk: {

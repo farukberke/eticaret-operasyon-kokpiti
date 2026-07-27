@@ -47,8 +47,19 @@ export interface SignalCardProps {
   readonly outcome: SignalOutcome;
   /** Son karar günü. `urgent` bugün ya da geçmiş demektir. */
   readonly deadline?: { readonly label: string; readonly urgent: boolean } | undefined;
-  readonly severityLabel: string;
-  readonly severityTone: BadgeTone;
+  /**
+   * Şiddet rozeti — **opsiyonel**.
+   *
+   * Kokpit kuyruğu vermez: orada işler zaman gruplarına ayrılmış durumda ve
+   * "Bugün" başlığının altındaki bir karta ayrıca "Kritik" yazmak, iki ayrı
+   * hiyerarşiyi yarıştırmaktan başka bir işe yaramaz. Zaman bir talimattır,
+   * şiddet bir soyutlama.
+   *
+   * Zaman gruplaması olmayan liste sayfaları (`/riskler`, `/firsatlar`,
+   * `/oncelikler`) vermeye devam eder; orada tek sıralama ipucu budur.
+   */
+  readonly severityLabel?: string | undefined;
+  readonly severityTone?: BadgeTone | undefined;
   /**
    * Aksiyon düğmeleri ("Sipariş verdim", "Ertele"…).
    *
@@ -98,7 +109,7 @@ export function SignalCard({
         {/* 1 — NE */}
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <h3 className="text-fg text-sm font-semibold">{title}</h3>
-          <Badge tone={severityTone}>{severityLabel}</Badge>
+          {severityLabel && <Badge tone={severityTone}>{severityLabel}</Badge>}
         </div>
 
         {/* 2 — NEDEN. Kartın en ikna edici parçası; fısıltı olamaz. */}

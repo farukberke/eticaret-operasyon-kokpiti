@@ -6,6 +6,7 @@ import type { Evidence, Signal, SignalSubject } from "../domain/signal";
 import {
   createSignal,
   orderDeadlineOf,
+  weekDeadlineOf,
   type AnalysisContext,
 } from "./analysis-context";
 import { velocityChangeOf } from "./inventory-analyzer";
@@ -68,7 +69,8 @@ const trendingUp: ProductRule = (performance, context) => {
     subject: subjectOf(performance),
     moneyAtStake: upside,
     dailyImpact: multiplyMoney(performance.unitProfit, extraUnitsPerDay),
-    // Trend soğumadan hareket etmek gerekir.
+    // Trend soğumadan hareket etmek gerekir; stok ve bütçe kararı bu haftalık.
+    deadline: weekDeadlineOf(context),
     urgency: 6,
     evidence: [
       evidence("velocityGrowth", {

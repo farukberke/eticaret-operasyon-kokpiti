@@ -56,8 +56,6 @@ function DetailLink({
   );
 }
 
-const COCKPIT_QUEUE_LIMIT = 3;
-
 export async function CockpitPage({ locale }: { locale: Locale }) {
   const range = defaultRange();
 
@@ -100,13 +98,7 @@ export async function CockpitPage({ locale }: { locale: Locale }) {
     <TaskStateProvider today={today}>
       <div className="flex flex-col gap-5">
         {/* 1–2 — GÜNÜN CÜMLESİ + KUYRUK */}
-        <CockpitQueue
-          views={views}
-          today={today}
-          locale={locale}
-          currency={CURRENCY}
-          limit={COCKPIT_QUEUE_LIMIT}
-        />
+        <CockpitQueue views={views} today={today} locale={locale} currency={CURRENCY} />
 
         {/* 3 — BAĞLAM */}
         <ContextStrip sales={sales} profit={profit} locale={locale} />

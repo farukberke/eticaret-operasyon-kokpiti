@@ -13,6 +13,7 @@ import {
   type IsoDate,
   type TaskFilter,
 } from "@/core/domain";
+import { TIME_GROUPS, type TimeGroup } from "@/core/services/queue-groups";
 import type { SignalView } from "@/features/signals/signal-view";
 import { useTasks } from "@/features/tasks/task-state-provider.client";
 import { Link } from "@/i18n/navigation";
@@ -23,39 +24,41 @@ import { EmptyState } from "@/ui/patterns/empty-state";
 import { SignalCard } from "@/ui/patterns/signal-card";
 
 import { DayBrief } from "./day-brief";
+import { QueueGroup } from "./queue-group.client";
 import { TaskActions } from "./task-actions.client";
 
 /**
  * KOKPİT KUYRUĞU — panelin rapordan operasyona döndüğü yer.
  *
+ * Açık kuyruk **zamana göre** gruplanır: Bugün / Bu hafta / Takipte.
+ * Gruplama son karar tarihinden gelir, şiddet rozetinden değil — "Kritik"
+ * bir soyutlamadır, "Bugün" bir talimattır. Bu yüzden kokpit kartlarında
+ * şiddet rozeti de gösterilmez; iki hiyerarşi yarışmaz.
+ *
+ * Ertelenen ve Tamamlanan sekmeleri gruplanmaz: onlarda soru "ne zaman karar
+ * vermeliyim" değil, "neyi ertelemiştim / neyi kapatmıştım".
+ *
  * Neden istemci bileşeni: görev durumu `localStorage`'da yaşıyor ve sunucuda
- * okunamıyor. Sunucu tüm sinyalleri hazır görünüm modeli olarak veriyor,
- * kuyruk hangilerinin görüneceğine burada karar veriyor.
- *
- * Bilinen sınır: ilk boyamada kuyruk sunucunun bildiği hâliyle (her sinyal
- * açık) görünür, hidrasyondan sonra kullanıcının kararları uygulanır. Bu,
- * durum tarayıcıda olduğu sürece kaçınılmaz. Oturum ve veritabanı
- * geldiğinde `TaskPort` sunucu tarafına geçecek ve tamamen ortadan kalkacak.
- *
- * Sunucu **tüm** öncelikleri gönderir, ilk üçünü değil: kullanıcı üstteki
- * işleri kapattıkça alttakiler kuyruğa yükselmeli, ayrıca "Tamamlanan"
- * sekmesi ilk üçün dışındaki işleri de gösterebilmeli.
+ * okunamıyor. Sunucu tüm sinyalleri hazır görünüm modeli olarak veriyor.
  */
 const FILTERS: readonly TaskFilter[] = ["open", "snoozed", "done"];
+
+const GROUP_LABEL: Record<TimeGroup, string> = {
+  today: "groupToday",
+  week: "groupWeek",
+  later: "groupLater",
+};
 
 export function CockpitQueue({
   views,
   today,
   locale,
   currency,
-  limit,
 }: {
   views: readonly SignalView[];
   today: IsoDate;
   locale: string;
   currency: Currency;
-  /** Açık kuyrukta bir seferde gösterilecek iş sayısı. */
-  limit: number;
 }) {
   const t = useTranslations("queue");
   const cockpit = useTranslations("cockpit");
@@ -77,34 +80,83 @@ export function CockpitQueue({
     return grouped;
   }, [views, states, today]);
 
-  // `useMemo` bağımlılığı olduğu için ayrı tutuluyor: `?? []` her render'da
-  // yeni dizi üretir ve özeti gereksiz yere yeniden hesaplatır.
-  const open = useMemo(() => byFilter.get("open") ?? [], [byFilter]);
-  const active = byFilter.get(filter) ?? [];
-  // Yalnızca açık kuyruk kısaltılır; kapanmış işlerin tamamı görünmeli.
-  const shown = filter === "open" ? active.slice(0, limit) : active;
+  /** Açık işlerin zaman gruplarına dağılımı. Sayaçlar buradan canlı gelir. */
+  const byTime = useMemo(() => {
+    const grouped = new Map<TimeGroup, SignalView[]>(
+      TIME_GROUPS.map((key) => [key, [] as SignalView[]]),
+    );
+    for (const view of byFilter.get("open") ?? []) {
+      grouped.get(view.timeGroup)!.push(view);
+    }
+    return grouped;
+  }, [byFilter]);
+
+  const todayGroup = useMemo(() => byTime.get("today") ?? [], [byTime]);
 
   /**
-   * Günün özeti her zaman **açık** işlerden hesaplanır, aktif sekmeden değil.
-   * "Tamamlananlar"a bakarken bile günün durumu değişmez.
+   * Günün özeti artık **Bugün grubuna** bağlı.
+   *
+   * Önceden "ilk 3 iş" üzerinden hesaplanıyordu ve "bugün 3 işin var" cümlesi
+   * aslında "listenin ilk üçü" demekti. Zaman grupları geldiğine göre cümle
+   * gerçekten bugünkü işi sayabilir.
    */
   const brief = useMemo(() => {
-    const queue = open.slice(0, limit);
-    if (queue.length === 0) {
+    if (todayGroup.length === 0) {
       return { headline: cockpit("allClear"), stake: undefined, dueToday: undefined };
     }
 
-    const stakeMinor = queue.reduce((sum, view) => sum + view.profitGainMinor, 0);
-    const urgent = queue.filter((view) => view.deadline?.urgent).length;
+    const stakeMinor = todayGroup.reduce((sum, view) => sum + view.profitGainMinor, 0);
+    const overdue = todayGroup.filter((view) => view.overdueDays > 0).length;
 
     return {
-      headline: cockpit("briefCount", { count: queue.length }),
+      headline: cockpit("briefCount", { count: todayGroup.length }),
       stake: cockpit("briefStake", {
         amount: formatMoney({ minor: stakeMinor, currency }, locale),
       }),
-      dueToday: urgent > 0 ? cockpit("briefDueToday", { count: urgent }) : undefined,
+      dueToday: overdue > 0 ? cockpit("briefOverdue", { count: overdue }) : undefined,
     };
-  }, [open, limit, cockpit, currency, locale]);
+  }, [todayGroup, cockpit, currency, locale]);
+
+  const renderCard = (view: SignalView, showRank: number | undefined) => {
+    const state = states.get(view.id);
+    const snoozed = isSnoozedOn(state, today);
+    const done = isDone(state);
+    const closed = isClosedOn(state, today);
+
+    return (
+      <li key={view.id}>
+        <SignalCard
+          rank={showRank}
+          title={view.title}
+          evidence={view.evidence}
+          action={view.action}
+          outcome={view.outcome}
+          deadline={view.deadline}
+          dimmed={closed}
+          note={
+            snoozed && state?.snoozedUntil
+              ? t("snoozedUntil", {
+                  date: formatShortDate(state.snoozedUntil, locale),
+                })
+              : done
+                ? t("doneNote")
+                : undefined
+          }
+          actions={
+            <TaskActions
+              closed={closed}
+              doneLabel={view.doneLabel}
+              onComplete={() =>
+                complete(view.id, { minor: view.profitGainMinor, currency })
+              }
+              onSnooze={(days) => snooze(view.id, days)}
+              onReopen={() => reopen(view.id)}
+            />
+          }
+        />
+      </li>
+    );
+  };
 
   const emptyFor = (key: TaskFilter) => {
     if (key === "snoozed") {
@@ -119,7 +171,7 @@ export function CockpitQueue({
     };
   };
 
-  const remaining = open.length - shown.length;
+  const activeCount = byFilter.get(filter)?.length ?? 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -161,70 +213,52 @@ export function CockpitQueue({
         })}
       </div>
 
-      <Card className="px-4">
-        {shown.length === 0 ? (
+      {activeCount === 0 ? (
+        <Card className="px-4">
           <EmptyState {...emptyFor(filter)} />
-        ) : (
+        </Card>
+      ) : filter === "open" ? (
+        <div className="flex flex-col gap-4">
+          {TIME_GROUPS.map((group) => {
+            const items = byTime.get(group) ?? [];
+            return (
+              <QueueGroup
+                key={group}
+                label={t(GROUP_LABEL[group])}
+                count={items.length}
+                tone={group === "today" ? "urgent" : "neutral"}
+                /**
+                 * Yalnızca "Bugün" açık başlar.
+                 *
+                 * Üçü birden açıkken kokpit 5000 piksele çıkıyordu ve
+                 * "30 saniyede anla" vaadi scroll altında kalıyordu. Ekranın
+                 * ilk görünümü bugünün işine ait olmalı; haftalık plan ve
+                 * takip listesi bir tık ötede dursun.
+                 */
+                collapsible={group !== "today"}
+              >
+                <ul className="divide-border divide-y">
+                  {items.map((view, index) => renderCard(view, index + 1))}
+                </ul>
+              </QueueGroup>
+            );
+          })}
+        </div>
+      ) : (
+        <Card className="px-4">
           <ul className="divide-border divide-y">
-            {shown.map((view, index) => {
-              const state = states.get(view.id);
-              const snoozed = isSnoozedOn(state, today);
-              const done = isDone(state);
-              // Süresi dolmuş erteleme kuyruğa döndüğü için "kapalı" sayılmaz.
-              const closed = isClosedOn(state, today);
-
-              return (
-                <li key={view.id}>
-                  <SignalCard
-                    rank={filter === "open" ? index + 1 : undefined}
-                    title={view.title}
-                    evidence={view.evidence}
-                    action={view.action}
-                    outcome={view.outcome}
-                    deadline={view.deadline}
-                    severityLabel={view.severityLabel}
-                    severityTone={view.severityTone}
-                    dimmed={closed}
-                    note={
-                      snoozed && state?.snoozedUntil
-                        ? t("snoozedUntil", {
-                            date: formatShortDate(state.snoozedUntil, locale),
-                          })
-                        : done
-                          ? t("doneNote")
-                          : undefined
-                    }
-                    actions={
-                      <TaskActions
-                        closed={closed}
-                        doneLabel={view.doneLabel}
-                        onComplete={() =>
-                          complete(view.id, {
-                            minor: view.profitGainMinor,
-                            currency,
-                          })
-                        }
-                        onSnooze={(days) => snooze(view.id, days)}
-                        onReopen={() => reopen(view.id)}
-                      />
-                    }
-                  />
-                </li>
-              );
-            })}
+            {(byFilter.get(filter) ?? []).map((view) => renderCard(view, undefined))}
           </ul>
-        )}
-      </Card>
-
-      {filter === "open" && remaining > 0 && (
-        <Link
-          href="/priorities"
-          className="text-accent inline-flex items-center gap-1 self-start text-xs font-medium hover:underline"
-        >
-          {cockpit("remaining", { count: remaining })}
-          <ArrowRight className="size-3" aria-hidden />
-        </Link>
+        </Card>
       )}
+
+      <Link
+        href="/priorities"
+        className="text-accent inline-flex items-center gap-1 self-start text-xs font-medium hover:underline"
+      >
+        {t("viewFullList")}
+        <ArrowRight className="size-3" aria-hidden />
+      </Link>
     </div>
   );
 }

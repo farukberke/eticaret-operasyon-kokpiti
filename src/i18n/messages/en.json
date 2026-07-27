@@ -44,8 +44,7 @@
     "noOpportunitiesDescription": "No new trend or pricing opening right now.",
     "briefCount": "You have {count} things to do today.",
     "briefStake": "Acting protects {amount} in profit.",
-    "briefDueToday": "{count} of them need a decision today.",
-    "remaining": "{count} more waiting"
+    "briefOverdue": "{count} of them are overdue."
   },
   "kpi": {
     "revenue": "Revenue",
@@ -212,7 +211,8 @@
     "capital": {
       "do": "{amount} freed up",
       "skip": "{amount} stays tied up"
-    }
+    },
+    "deadlineOverdue": "Overdue · {days} days"
   },
   "done": {
     "STOCKOUT_IMMINENT": "Ordered",
@@ -241,7 +241,11 @@
     "emptySnoozed": "Nothing snoozed",
     "emptySnoozedDescription": "Snoozed work shows up here and returns to the queue when the time is up.",
     "emptyDone": "Nothing completed yet",
-    "emptyDoneDescription": "Work you close lands here; you can undo it if needed."
+    "emptyDoneDescription": "Work you close lands here; you can undo it if needed.",
+    "groupToday": "Today",
+    "groupWeek": "This week",
+    "groupLater": "Watchlist",
+    "viewFullList": "Open the full list"
   },
   "ledger": {
     "title": "Work you closed",

@@ -25,6 +25,31 @@ export function toIsoDate(date: Date): IsoDate {
   return date.toISOString().slice(0, 10);
 }
 
+/**
+ * Belirli bir saat dilimindeki takvim günü.
+ *
+ * `toIsoDate(new Date())` UTC verir ve bu, "bugün" hesabı için **yanlıştır**:
+ * İstanbul'da 27 Temmuz gece 02:00'de UTC hâlâ 26 Temmuz'dur. Sunucu UTC'de
+ * çalıştığı için bir iş sessizce yanlış güne düşer — "son karar: bugün"
+ * yazması gereken kart "yarın" der.
+ *
+ * Mağazanın saat dilimi üzerinden hesaplamak hem doğru hem deterministik:
+ * sunucu ve istemci aynı değeri görür, hidrasyon uyuşmazlığı çıkmaz.
+ */
+export function todayIn(timeZone: string, now: Date = new Date()): IsoDate {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
 /** Gün anahtarını UTC gece yarısına sabitlenmiş `Date`e çevirir. */
 export function fromIsoDate(date: IsoDate): Date {
   return new Date(`${date}T00:00:00.000Z`);

@@ -146,15 +146,37 @@ export function createSignal(params: {
  * Stok kararının son günü.
  *
  * `stok yeterlilik günü − tedarik süresi` kadar gün sonra sipariş verilmelidir.
- * Sonuç negatifse karar zaten gecikmiştir ve bugüne sabitlenir — geçmişe
- * tarih basmak kullanıcıya yardımcı olmaz, "bugün" der ve geçer.
+ *
+ * Sonuç **geçmişe düşebilir ve düşmelidir**: stok 2 gün yetiyorsa ve tedarik
+ * 7 gün sürüyorsa, sipariş 5 gün önce verilmeliydi. Önceki sürüm bu tarihi
+ * bugüne kırpıyordu ve "gecikmiş" durumu hiç oluşamıyordu — oysa "Gecikti ·
+ * 5 gün", "Son karar: bugün"den çok daha fazlasını anlatır: iş çoktan
+ * kaçmıştır ve her gün daha da kötüleşmektedir.
  */
 export function orderDeadlineOf(
   daysOfCover: number,
   context: AnalysisContext,
 ): IsoDate {
   const slack = daysOfCover - context.rules.inventory.supplyLeadTimeDays;
-  return addDays(context.today, Math.max(0, Math.floor(slack)));
+  return addDays(context.today, Math.floor(slack));
+}
+
+/**
+ * "Bugün karar ver" — her gün para eriten sinyaller için.
+ *
+ * Zararına satış ve reklam sızıntısında beklemenin somut bir günlük bedeli
+ * var; tedarik süresi gibi bir takvim kısıtı olmasa da karar bugüne aittir.
+ */
+export function todayDeadlineOf(context: AnalysisContext): IsoDate {
+  return context.today;
+}
+
+/**
+ * "Bu hafta ele al" — bugün patlamayan ama sürüncemede kalmaması gereken
+ * işler (marj erozyonu, yüksek iade, sönen trend) için.
+ */
+export function weekDeadlineOf(context: AnalysisContext): IsoDate {
+  return addDays(context.today, context.rules.inventory.decisionHorizonDays);
 }
 
 /** Dönem toplamını günlük orana çevirir. */

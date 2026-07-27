@@ -82,9 +82,10 @@ describe("STOCKOUT_IMMINENT — kayıp hesabı", () => {
     );
   });
 
-  it("stok tedarik süresinden azsa son karar gününü bugüne çeker", () => {
-    // 2 gün stok, 7 gün tedarik → karar zaten gecikmiş.
-    expect(signal.deadline).toBe(TODAY);
+  it("stok tedarik süresinden azsa son karar gününü geçmişe yazar", () => {
+    // 2 gün stok, 7 gün tedarik → sipariş 5 gün önce verilmeliydi.
+    // Tarihi bugüne kırpmak, işin çoktan geciktiğini gizlerdi.
+    expect(signal.deadline).toBe("2026-07-22");
   });
 
   it("stok bolken son karar gününü ileriye atar", () => {

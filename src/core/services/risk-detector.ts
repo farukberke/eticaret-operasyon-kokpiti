@@ -13,6 +13,8 @@ import {
   createSignal,
   orderDeadlineOf,
   perDayOf,
+  todayDeadlineOf,
+  weekDeadlineOf,
   type AnalysisContext,
 } from "./analysis-context";
 
@@ -167,6 +169,8 @@ const marginErosion: ProductRule = (performance, context) => {
     subject: subjectOf(performance),
     moneyAtStake: lostProfit,
     dailyImpact: perDayOf(lostProfit, context),
+    // Fiyat ya da tedarik maliyeti gözden geçirilmeli — bugün patlamaz.
+    deadline: weekDeadlineOf(context),
     urgency: belowCritical ? 7 : 6,
     evidence: [
       evidence("marginNow", { margin }),
@@ -204,6 +208,8 @@ const highReturnRate: ProductRule = (performance, context) => {
     subject: subjectOf(performance),
     moneyAtStake: lostProfit,
     dailyImpact: perDayOf(lostProfit, context),
+    // İlan görseli ve beden tablosu düzeltmesi bir haftalık iş.
+    deadline: weekDeadlineOf(context),
     urgency: 5,
     evidence: [
       evidence("returnRate", {
@@ -238,6 +244,8 @@ const sellingAtLoss: ProductRule = (performance, context) => {
     moneyAtStake: loss,
     dailyImpact: perDayOf(loss, context),
     // En acil kural: durdurulmadıkça her sipariş zararı artırır.
+    // Tedarik takvimi yok ama karar bugüne ait.
+    deadline: todayDeadlineOf(context),
     urgency: 9,
     evidence: [
       evidence("lossPerPeriod", {
@@ -272,6 +280,8 @@ const adSpendLeak: ProductRule = (performance, context) => {
     subject: subjectOf(performance),
     moneyAtStake: performance.adSpend,
     dailyImpact: perDayOf(performance.adSpend, context),
+    // Bütçe her gün yanıyor; kampanyayı durdurmak bugünün işi.
+    deadline: todayDeadlineOf(context),
     urgency: 7,
     evidence: [
       evidence("roasBelowOne", {
@@ -318,6 +328,8 @@ function profitDrop(context: AnalysisContext): Signal | null {
     subject: { type: "store", label: "store" },
     moneyAtStake: lost,
     dailyImpact: perDayOf(lost, context),
+    // Kategori incelemesi araştırma gerektirir; bu haftaya yazılır.
+    deadline: weekDeadlineOf(context),
     urgency: 8,
     evidence: [evidence("profitChange", { change, current, previous })],
     context,

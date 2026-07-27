@@ -44,8 +44,7 @@
     "noOpportunitiesDescription": "Yeni bir trend ya da fiyat fırsatı görünmüyor.",
     "briefCount": "Bugün {count} işin var.",
     "briefStake": "Yaparsan {amount} kâr korunur.",
-    "briefDueToday": "{count} tanesi bugün karar istiyor.",
-    "remaining": "Bekleyen {count} iş"
+    "briefOverdue": "{count} tanesi gecikti."
   },
   "kpi": {
     "revenue": "Ciro",
@@ -212,7 +211,8 @@
     "capital": {
       "do": "{amount} serbest kalır",
       "skip": "{amount} bağlı kalır"
-    }
+    },
+    "deadlineOverdue": "Gecikti · {days} gün"
   },
   "done": {
     "STOCKOUT_IMMINENT": "Sipariş verdim",
@@ -241,7 +241,11 @@
     "emptySnoozed": "Ertelenmiş iş yok",
     "emptySnoozedDescription": "Bir işi ertelediğinde burada görünür ve süresi dolunca kuyruğa döner.",
     "emptyDone": "Henüz tamamlanan iş yok",
-    "emptyDoneDescription": "Kapattığın işler buraya düşer; gerekirse geri alabilirsin."
+    "emptyDoneDescription": "Kapattığın işler buraya düşer; gerekirse geri alabilirsin.",
+    "groupToday": "Bugün",
+    "groupWeek": "Bu hafta",
+    "groupLater": "Takipte",
+    "viewFullList": "Tam listeyi aç"
   },
   "ledger": {
     "title": "Kapattığın işler",

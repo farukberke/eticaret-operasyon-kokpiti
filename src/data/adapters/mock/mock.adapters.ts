@@ -1,4 +1,4 @@
-import { toIsoDate, type DateRange, type IsoDate } from "@/core/domain";
+import { todayIn, type DateRange, type IsoDate } from "@/core/domain";
 import type {
   ClockPort,
   PriorityPort,
@@ -27,9 +27,21 @@ import { buildDataset } from "../../mock/seed";
  * Bu yüzden "mock" burada "sahte panel" değil, "sahte veri kaynağı" demek.
  */
 
+/**
+ * Mağazanın saat dilimi.
+ *
+ * "Bugün"ün tanımı buradan gelir. Sunucu UTC'de çalıştığı için doğrudan
+ * `new Date()` okumak, İstanbul'da gece yarısıyla 03:00 arasındaki her
+ * istekte günü bir geri kaydırırdı — ve son karar tarihi bugün olan bir iş
+ * "yarın" grubuna düşerdi.
+ *
+ * Çok bölgeli mağazalar geldiğinde bu değer kullanıcı ayarından okunacak.
+ */
+export const STORE_TIME_ZONE = "Europe/Istanbul";
+
 export const mockClock: ClockPort = {
   today(): IsoDate {
-    return toIsoDate(new Date());
+    return todayIn(STORE_TIME_ZONE);
   },
 };
 
