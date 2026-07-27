@@ -125,8 +125,19 @@ function issueView(row: InvalidRow): ImportIssueView {
 
 function rowView(row: PreviewRow, locale: string, today: string): ImportRowView {
   const current = row.current;
+  /**
+   * Önizlemede kuruş **her zaman** yazılır (`decimals: 2`).
+   *
+   * `formatMoney` varsayılanı 100 ₺ üstünde kuruşu atar — listelerde doğru
+   * karar, burada değil: dosyada "1234,56" yazan satır "₺1.235" görünürdü ve
+   * kullanıcı onayladığı rakamın kaydedilecek rakam olduğunu doğrulayamazdı.
+   * Yuvarlama yalnızca gösterimdeydi, ama yazma öncesi son kontrol ekranında
+   * gösterimin de birebir olması gerekir.
+   *
+   * Sınır bu dosyada durur; diğer ekranların biçimlendirmesi değişmez.
+   */
   const money = (value: Money | undefined): string =>
-    value ? formatMoney(value, locale) : EMPTY;
+    value ? formatMoney(value, locale, { decimals: 2 }) : EMPTY;
 
   const changes: FieldChangeView[] = [
     {
