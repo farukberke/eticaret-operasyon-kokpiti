@@ -4,7 +4,14 @@ import { eachDay, lira, type SignalCode, type StoreDataset } from "@/core/domain
 import { createAnalysisContext } from "@/core/services/analysis-context";
 import { detectRisks } from "@/core/services/risk-detector";
 
-import { TODAY, makeDataset, makeLine, makeOrder, makeProduct } from "./fixtures";
+import {
+  COST_EPOCH,
+  TODAY,
+  makeDataset,
+  makeLine,
+  makeOrder,
+  makeProduct,
+} from "./fixtures";
 
 const WEEK = { from: "2026-07-21", to: TODAY };
 
@@ -83,7 +90,7 @@ describe("STOCKOUT_IMMINENT", () => {
 describe("DEAD_STOCK", () => {
   it("satışsız ve değerli stokta tetiklenir", () => {
     const dataset = makeDataset({
-      products: [makeProduct({ stock: 100, unitCost: lira(80) })], // ₺8.000 bağlı
+      products: [makeProduct({ stock: 100 })], // ₺8.000 bağlı
       orders: [],
     });
 
@@ -93,7 +100,7 @@ describe("DEAD_STOCK", () => {
   it("bağlı sermaye eşiğin altındaysa tetiklenmez", () => {
     // Gürültü olmasın: ₺400'lük ölü stok için satıcıyı uyandırmaya değmez.
     const dataset = makeDataset({
-      products: [makeProduct({ stock: 5, unitCost: lira(80) })],
+      products: [makeProduct({ stock: 5 })],
       orders: [],
     });
 
@@ -102,7 +109,7 @@ describe("DEAD_STOCK", () => {
 
   it("satış varsa tetiklenmez", () => {
     const dataset = makeDataset({
-      products: [makeProduct({ stock: 100, unitCost: lira(80) })],
+      products: [makeProduct({ stock: 100 })],
       orders: dailyOrders(eachDay(WEEK), 1),
     });
 
@@ -112,13 +119,12 @@ describe("DEAD_STOCK", () => {
 
 describe("SELLING_AT_LOSS", () => {
   it("net kâr negatifken tetiklenir", () => {
-    // Günlük: 500 ciro − 450 maliyet − 40 komisyon − 30 kargo = −20
+    // Günlük: 500 ciro − 450 maliyet − %15 komisyon (75) = −25
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(90), stock: 500 })],
-      orders: dailyOrders(eachDay(WEEK), 5, {
-        order: { commission: lira(40), shippingCost: lira(30) },
-        line: { unitCost: lira(90) },
-      }),
+      products: [makeProduct({ price: lira(100), stock: 500 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(90) },
+      commissionPercent: 15,
     });
 
     expect(codesOf(dataset)).toContain("SELLING_AT_LOSS");
@@ -126,8 +132,8 @@ describe("SELLING_AT_LOSS", () => {
 
   it("kâr pozitifken tetiklenmez", () => {
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(40), stock: 500 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(40) } }),
+      products: [makeProduct({ price: lira(100), stock: 500 })],
+      orders: dailyOrders(eachDay(WEEK), 5, { line: {} }),
     });
 
     expect(codesOf(dataset)).not.toContain("SELLING_AT_LOSS");
@@ -138,8 +144,9 @@ describe("MARGIN_EROSION", () => {
   it("marj kritik seviyenin altına inince tetiklenir", () => {
     // 100 ciro − 92 maliyet → %8 marj, eşik %10.
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(92), stock: 500 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(92) } }),
+      products: [makeProduct({ price: lira(100), stock: 500 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(92) },
     });
 
     expect(codesOf(dataset)).toContain("MARGIN_EROSION");
@@ -147,21 +154,40 @@ describe("MARGIN_EROSION", () => {
 
   it("marj sağlıklıyken tetiklenmez", () => {
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(60), stock: 500 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(60) } }),
+      products: [makeProduct({ price: lira(100), stock: 500 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(60) },
     });
 
     expect(codesOf(dataset)).not.toContain("MARGIN_EROSION");
   });
 
   it("marj hâlâ sağlıklı olsa bile sert düşüşte tetiklenir", () => {
-    // Önceki dönem %40, bu dönem %25 → 15 puan düşüş.
+    /**
+     * Gerçek bir tarihsel maliyet senaryosu: tedarikçi 21 Temmuz'da zam yaptı.
+     * Önceki dönem ₺60 maliyetle %40 marj, bu dönem ₺75 ile %25 → 15 puan
+     * düşüş. Marj hâlâ sağlıklı ama gidişat kötü.
+     *
+     * Bu test aynı anda iki şeyi doğruluyor: erozyon kuralı ve maliyetin
+     * sipariş tarihine göre çözümlenmesi.
+     */
     const previous = eachDay({ from: "2026-07-14", to: "2026-07-20" });
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(75), stock: 500 })],
-      orders: [
-        ...dailyOrders(previous, 5, { line: { unitCost: lira(60) } }),
-        ...dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(75) } }),
+      products: [makeProduct({ price: lira(100), stock: 500 })],
+      orders: [...dailyOrders(previous, 5), ...dailyOrders(eachDay(WEEK), 5)],
+      costRecords: [
+        {
+          productId: "p1",
+          effectiveFrom: COST_EPOCH,
+          unitCost: lira(60),
+          source: "seed",
+        },
+        {
+          productId: "p1",
+          effectiveFrom: "2026-07-21",
+          unitCost: lira(75),
+          source: "manual",
+        },
       ],
     });
 

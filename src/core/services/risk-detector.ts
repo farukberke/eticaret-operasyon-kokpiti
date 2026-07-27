@@ -6,7 +6,7 @@ import {
   subtractMoney,
   type Money,
 } from "../domain/money";
-import type { ProductPerformance } from "../domain/product";
+import { isMeasured, type MeasuredPerformance } from "../domain/product";
 import type { Evidence, Signal, SignalSubject } from "../domain/signal";
 
 import {
@@ -29,11 +29,11 @@ import {
  */
 
 type ProductRule = (
-  performance: ProductPerformance,
+  performance: MeasuredPerformance,
   context: AnalysisContext,
 ) => Signal | null;
 
-const subjectOf = (performance: ProductPerformance): SignalSubject => ({
+const subjectOf = (performance: MeasuredPerformance): SignalSubject => ({
   type: "product",
   id: performance.product.id,
   label: performance.product.name,
@@ -336,19 +336,57 @@ function profitDrop(context: AnalysisContext): Signal | null {
   });
 }
 
+/**
+ * 8) Maliyet eksik.
+ *
+ * Ürün başına değil **mağaza düzeyinde tek** sinyal: 12 ürün için 12 kart
+ * üretmek kuyruğu boğar ve hepsinin çözümü zaten tek bir ekranda.
+ *
+ * Masadaki para bir kayıp değil, **ölçülemeyen ciro**: o ürünlerin kâr edip
+ * etmediğini bilmiyoruz. Bu yüzden "korunur/erir" dili kullanılmaz ve
+ * kapatıldığında deftere kâr yazılmaz.
+ */
+function costMissing(context: AnalysisContext): Signal | null {
+  const { productsMissing, revenueExcluded } = context.coverage;
+  if (productsMissing === 0) return null;
+
+  return createSignal({
+    kind: "risk",
+    code: "COST_MISSING",
+    subject: { type: "store", label: "store" },
+    moneyAtStake: revenueExcluded,
+    // Kurulum işi: bugün patlamaz ama sürüncemede kalırsa panel kör kalır.
+    deadline: weekDeadlineOf(context),
+    urgency: 5,
+    evidence: [
+      evidence("missingCost", {
+        products: productsMissing,
+        revenue: revenueExcluded,
+      }),
+    ],
+    context,
+  });
+}
+
 /** Tüm risk kurallarını çalıştırır. Sıralama öncelik motorunun işidir. */
 export function detectRisks(context: AnalysisContext): Signal[] {
   const signals: Signal[] = [];
 
+  // Maliyeti bilinmeyen urun kural dongusune hic girmez: hesaplanamayan
+  // bir kardan risk ya da firsat uretmek uydurma olurdu.
   for (const performance of context.performance) {
+    if (!isMeasured(performance)) continue;
+
     for (const rule of PRODUCT_RULES) {
       const signal = rule(performance, context);
       if (signal) signals.push(signal);
     }
   }
 
-  const storeSignal = profitDrop(context);
-  if (storeSignal) signals.push(storeSignal);
+  for (const storeRule of [profitDrop, costMissing]) {
+    const signal = storeRule(context);
+    if (signal) signals.push(signal);
+  }
 
   return signals;
 }

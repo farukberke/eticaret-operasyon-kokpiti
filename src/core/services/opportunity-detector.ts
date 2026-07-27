@@ -1,6 +1,6 @@
 import { isWithin } from "../domain/date-range";
 import { addMoney, multiplyMoney } from "../domain/money";
-import type { ProductPerformance } from "../domain/product";
+import { isMeasured, type MeasuredPerformance } from "../domain/product";
 import type { Evidence, Signal, SignalSubject } from "../domain/signal";
 
 import {
@@ -25,11 +25,11 @@ import { velocityChangeOf } from "./inventory-analyzer";
  */
 
 type ProductRule = (
-  performance: ProductPerformance,
+  performance: MeasuredPerformance,
   context: AnalysisContext,
 ) => Signal | null;
 
-const subjectOf = (performance: ProductPerformance): SignalSubject => ({
+const subjectOf = (performance: MeasuredPerformance): SignalSubject => ({
   type: "product",
   id: performance.product.id,
   label: performance.product.name,
@@ -225,8 +225,10 @@ function bundleCandidates(context: AnalysisContext): Signal[] {
     }
   }
 
+  // Paket önerisi de kâr üzerinden değerlenir; maliyeti bilinmeyen ürün
+  // haritaya hiç girmez, dolayısıyla çifti de önerilmez.
   const performanceById = new Map(
-    context.performance.map((p) => [p.product.id, p] as const),
+    context.performance.filter(isMeasured).map((p) => [p.product.id, p] as const),
   );
 
   return (
@@ -273,7 +275,11 @@ function bundleCandidates(context: AnalysisContext): Signal[] {
 export function detectOpportunities(context: AnalysisContext): Signal[] {
   const signals: Signal[] = [];
 
+  // Maliyeti bilinmeyen urun kural dongusune hic girmez: hesaplanamayan
+  // bir kardan risk ya da firsat uretmek uydurma olurdu.
   for (const performance of context.performance) {
+    if (!isMeasured(performance)) continue;
+
     for (const rule of PRODUCT_RULES) {
       const signal = rule(performance, context);
       if (signal) signals.push(signal);

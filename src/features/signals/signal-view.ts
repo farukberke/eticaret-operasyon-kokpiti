@@ -1,6 +1,6 @@
 import {
-  isCapitalSignal,
   profitGainOf,
+  stakeKindOf,
   type Evidence,
   type EvidenceValue,
   type Money,
@@ -142,11 +142,19 @@ function buildOutcome(
   t: SignalTranslators,
 ): SignalOutcome {
   const amount = formatMoney(signal.moneyAtStake, locale);
-  // Sınıflandırma çekirdekte: kâr defteri de aynı ayrımı kullanıyor.
-  const isCapital = isCapitalSignal(signal.code);
-  const isOpportunity = signal.kind === "opportunity";
 
-  const variant = isCapital ? "capital" : isOpportunity ? "gain" : "loss";
+  /**
+   * Sinyalin parası üç farklı şey olabilir ve üçü farklı cümle ister:
+   *
+   *   profit     → "korunur / erir"          (kaybedilen ya da kazanılan kâr)
+   *   capital    → "serbest kalır / bağlı"   (rafta duran sermaye)
+   *   unmeasured → "ölçülebilir olur / kör"  (değerlendirilemeyen ciro)
+   *
+   * Sınıflandırma çekirdekte; kâr defteri de aynı ayrımı kullanıyor.
+   */
+  const stake = stakeKindOf(signal.code);
+  const variant =
+    stake === "profit" ? (signal.kind === "opportunity" ? "gain" : "loss") : stake;
 
   return {
     doLabel: t.outcome("doLabel"),

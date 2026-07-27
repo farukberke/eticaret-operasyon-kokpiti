@@ -147,10 +147,9 @@ describe("buildPriorities", () => {
         id: "zarar",
         name: "Zarar",
         price: lira(100),
-        unitCost: lira(95),
         stock: 400,
       }),
-      makeProduct({ id: "olu", name: "Ölü", stock: 200, unitCost: lira(90) }),
+      makeProduct({ id: "olu", name: "Ölü", stock: 200 }),
     ],
     orders: eachDay(WEEK).flatMap((date) => [
       makeOrder({
@@ -161,9 +160,7 @@ describe("buildPriorities", () => {
       makeOrder({
         id: `z-${date}`,
         date,
-        lines: [makeLine({ productId: "zarar", quantity: 8, unitCost: lira(95) })],
-        commission: lira(60),
-        shippingCost: lira(40),
+        lines: [makeLine({ productId: "zarar", quantity: 8 })],
       }),
     ]),
   });

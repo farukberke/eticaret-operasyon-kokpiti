@@ -1,7 +1,6 @@
 import {
   dayOfWeek,
   eachDay,
-  lira,
   multiplyMoney,
   sumMoney,
   ZERO_MONEY,
@@ -21,12 +20,6 @@ import { createRng, seedFrom, type Rng } from "../prng";
  * arketipe bağlı yakın dönem çarpanı (trend/sönüş) ve normal dağılımlı gürültü.
  * Hepsi tohumlu üreteçten geldiği için sonuç deterministiktir.
  */
-
-/** Pazaryeri komisyon oranı. Gerçek entegrasyonda kategoriye göre değişecek. */
-const COMMISSION_RATE = 0.15;
-
-/** Satıcının her siparişte üstlendiği kargo bedeli. */
-const SHIPPING_PER_ORDER = lira(34.9);
 
 /** Siparişlerin bu oranı kupon kullanır. */
 const COUPON_PROBABILITY = 0.12;
@@ -86,9 +79,9 @@ function makeLine(entry: CatalogEntry, quantity: number): OrderLine {
   return {
     productId: entry.product.id,
     quantity,
-    // Satış anındaki fiyat ve maliyet satırda donar — geçmiş kâr doğru kalsın.
+    // Satış anındaki fiyat satırda donar; maliyet burada YOK — o, sipariş
+    // tarihine göre maliyet modelinden çözümlenir.
     unitPrice: entry.product.price,
-    unitCost: entry.product.unitCost,
   };
 }
 
@@ -149,8 +142,8 @@ export function generateOrders(params: {
           id: `${date}-${sequence}`,
           date,
           lines,
-          shippingCost: SHIPPING_PER_ORDER,
-          commission: multiplyMoney(gross, COMMISSION_RATE),
+          // Komisyon ve kargo artık siparişin üzerinde değil: ikisi de
+          // maliyet modelinden gelir ve kullanıcı tarafından yönetilir.
           discount: dayRng.chance(COUPON_PROBABILITY)
             ? multiplyMoney(gross, COUPON_RATE)
             : ZERO_MONEY,

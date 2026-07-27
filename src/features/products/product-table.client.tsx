@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/ui/primitives/badge";
 import { DataTable, type Column } from "@/ui/patterns/data-table";
 import { EmptyState } from "@/ui/patterns/empty-state";
 
@@ -42,6 +43,23 @@ export function ProductTableClient({
             cellClassName: "text-fg-muted",
           },
         ]),
+    {
+      /**
+       * Maliyet sütunu adı ürünün hemen yanında: maliyeti eksik bir ürünün
+       * kâr sütununda "—" görmek, sebebini de aynı satırda görmeden anlamsız.
+       */
+      key: "unitCost",
+      header: labels.unitCost,
+      render: (row) =>
+        row.costStatus === "missing" ? (
+          <Badge tone="warning">{labels.costMissing}</Badge>
+        ) : (
+          row.unitCostLabel
+        ),
+      // Eksik olanlar sıralamada bir arada dursun.
+      sortValue: (row) => (row.costStatus === "missing" ? 0 : 1),
+      numeric: true,
+    },
     {
       key: "unitsSold",
       header: labels.unitsSold,

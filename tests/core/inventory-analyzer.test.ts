@@ -7,7 +7,14 @@ import {
   velocityChangeOf,
 } from "@/core/services/inventory-analyzer";
 
-import { TODAY, makeDataset, makeLine, makeOrder, makeProduct } from "./fixtures";
+import {
+  TODAY,
+  costsFor,
+  makeDataset,
+  makeLine,
+  makeOrder,
+  makeProduct,
+} from "./fixtures";
 
 /** Verilen günlerde her gün `perDay` adet satan siparişler üretir. */
 function dailyOrders(days: string[], perDay: number, productId = "p1") {
@@ -44,7 +51,7 @@ describe("buildProductPerformance", () => {
       orders: dailyOrders(eachDay(WEEK), 12),
     });
 
-    const [performance] = buildProductPerformance(dataset, WEEK);
+    const [performance] = buildProductPerformance(dataset, WEEK, costsFor(dataset));
 
     expect(performance!.unitsSold).toBe(84); // 7 gün × 12
     expect(performance!.dailyVelocity).toBe(12);
@@ -54,15 +61,16 @@ describe("buildProductPerformance", () => {
   it("hiç satmayan ürünü listede tutar", () => {
     // Ölü stok tespiti tam olarak "listede olup satmayanı" bulmak demek.
     const dataset = makeDataset({
-      products: [makeProduct({ id: "olu", stock: 40, unitCost: lira(75) })],
+      products: [makeProduct({ id: "olu", stock: 40 })],
+      unitCosts: { olu: lira(75) },
       orders: [],
     });
 
-    const [performance] = buildProductPerformance(dataset, WEEK);
+    const [performance] = buildProductPerformance(dataset, WEEK, costsFor(dataset));
 
     expect(performance!.unitsSold).toBe(0);
     expect(performance!.daysOfCover).toBeNull();
-    expect(toMajor(performance!.stockValue)).toBe(3000); // 40 × 75
+    expect(toMajor(performance!.stockValue!)).toBe(3000); // 40 × 75
   });
 
   it("iade edilen adetleri satış hızından düşer", () => {
@@ -82,7 +90,7 @@ describe("buildProductPerformance", () => {
       ],
     });
 
-    const [performance] = buildProductPerformance(dataset, WEEK);
+    const [performance] = buildProductPerformance(dataset, WEEK, costsFor(dataset));
 
     expect(performance!.unitsSold).toBe(70);
     expect(performance!.unitsReturned).toBe(7);
@@ -99,7 +107,7 @@ describe("buildProductPerformance", () => {
       orders: [...dailyOrders(previous, 10), ...dailyOrders(current, 15)],
     });
 
-    const [performance] = buildProductPerformance(dataset, WEEK);
+    const [performance] = buildProductPerformance(dataset, WEEK, costsFor(dataset));
 
     expect(performance!.previousDailyVelocity).toBe(10);
     expect(performance!.dailyVelocity).toBe(15);
@@ -112,7 +120,7 @@ describe("buildProductPerformance", () => {
       orders: dailyOrders(eachDay(WEEK), 5),
     });
 
-    const [performance] = buildProductPerformance(dataset, WEEK);
+    const [performance] = buildProductPerformance(dataset, WEEK, costsFor(dataset));
     expect(velocityChangeOf(performance!)).toBeNull();
   });
 });

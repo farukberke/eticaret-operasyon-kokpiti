@@ -10,7 +10,9 @@ import type {
 } from "../domain/metrics";
 import { ZERO_MONEY, moneyRatio, multiplyMoney, type Money } from "../domain/money";
 
+import type { CostResolver } from "./cost-resolver";
 import {
+  aggregateCoverage,
   aggregateDaily,
   aggregateStore,
   netProfitOf,
@@ -50,8 +52,12 @@ export function buildCountTrend(current: number, previous: number): CountTrend {
 }
 
 /** Aralıktaki her gün için tek satır. Satışsız günler 0 ile doldurulur — grafik kopmaz. */
-function buildDailyPoints(dataset: StoreDataset, range: DateRange): DailyPoint[] {
-  const byDate = aggregateDaily(dataset, range);
+function buildDailyPoints(
+  dataset: StoreDataset,
+  range: DateRange,
+  costs: CostResolver,
+): DailyPoint[] {
+  const byDate = aggregateDaily(dataset, range, costs);
 
   return eachDay(range).map((date) => {
     const aggregate = byDate.get(date);
@@ -61,7 +67,14 @@ function buildDailyPoints(dataset: StoreDataset, range: DateRange): DailyPoint[]
     return {
       date,
       revenue: netRevenueOf(aggregate),
-      profit: netProfitOf(aggregate),
+      /**
+       * Grafikte gün bazında `null` çizilemez. O gün maliyeti eksik bir ürün
+       * satıldıysa kâr bilinmiyordur; sıfır çizmek grafiği yalancı yapar ama
+       * çizgiyi kesmek de okunmaz kılar. Bu yüzden **grafik yalnızca
+       * ölçülebilir ürünleri** gösterir ve kapsam bilgisi özet satırında
+       * ayrıca verilir.
+       */
+      profit: netProfitOf(aggregate) ?? ZERO_MONEY,
       orders: aggregate.orderCount,
     };
   });
@@ -70,9 +83,10 @@ function buildDailyPoints(dataset: StoreDataset, range: DateRange): DailyPoint[]
 export function buildSalesSummary(
   dataset: StoreDataset,
   range: DateRange,
+  costs: CostResolver,
 ): SalesSummary {
-  const current = aggregateStore(dataset, range);
-  const previous = aggregateStore(dataset, previousPeriod(range));
+  const current = aggregateStore(dataset, range, costs);
+  const previous = aggregateStore(dataset, previousPeriod(range), costs);
 
   const netRevenue = netRevenueOf(current);
 
@@ -90,21 +104,30 @@ export function buildSalesSummary(
     revenueTrend: buildMoneyTrend(netRevenue, netRevenueOf(previous)),
     orderTrend: buildCountTrend(current.orderCount, previous.orderCount),
 
-    daily: buildDailyPoints(dataset, range),
+    daily: buildDailyPoints(dataset, range, costs),
   };
 }
 
 export function buildProfitSummary(
   dataset: StoreDataset,
   range: DateRange,
+  costs: CostResolver,
 ): ProfitSummary {
-  const current = aggregateStore(dataset, range);
-  const previous = aggregateStore(dataset, previousPeriod(range));
+  const current = aggregateStore(dataset, range, costs);
+  const previous = aggregateStore(dataset, previousPeriod(range), costs);
 
   const netRevenue = netRevenueOf(current);
-  const netProfit = netProfitOf(current);
+
+  /**
+   * `aggregateStore` yalnızca maliyeti bilinen ürünleri topladığı için kâr
+   * her zaman hesaplanabilir. Kapsam dışı kalanlar `coverage` alanında
+   * ayrıca raporlanır — sessizce düşürmek, kullanıcıya eksik bir toplamı
+   * tam sanmasına yol açardı.
+   */
+  const netProfit = netProfitOf(current) ?? ZERO_MONEY;
+  const previousProfit = netProfitOf(previous) ?? ZERO_MONEY;
   const marginRatio = moneyRatio(netProfit, netRevenue);
-  const previousMargin = moneyRatio(netProfitOf(previous), netRevenueOf(previous));
+  const previousMargin = moneyRatio(previousProfit, netRevenueOf(previous));
 
   return {
     range,
@@ -117,17 +140,19 @@ export function buildProfitSummary(
     cogs: current.cogs,
     commission: current.commission,
     shipping: current.shipping,
+    packaging: current.packaging,
     adSpend: current.adSpend,
 
     netProfit,
     marginRatio,
+    coverage: aggregateCoverage(dataset, range, costs),
 
-    profitTrend: buildMoneyTrend(netProfit, netProfitOf(previous)),
+    profitTrend: buildMoneyTrend(netProfit, previousProfit),
     marginDeltaPoints:
       marginRatio !== null && previousMargin !== null
         ? marginRatio - previousMargin
         : null,
 
-    daily: buildDailyPoints(dataset, range),
+    daily: buildDailyPoints(dataset, range, costs),
   };
 }

@@ -54,8 +54,8 @@ describe("STOCKOUT_IMMINENT — kayıp hesabı", () => {
    * Kayıp: birim kâr × 10 adet/gün × 5 gün.
    */
   const dataset = makeDataset({
-    products: [makeProduct({ price: lira(100), unitCost: lira(60), stock: 20 })],
-    orders: dailyOrders(eachDay(WEEK), 10, { unitCost: lira(60) }),
+    products: [makeProduct({ price: lira(100), stock: 20 })],
+    orders: dailyOrders(eachDay(WEEK), 10, {}),
   });
 
   const signal = find(signalsOf(dataset), "STOCKOUT_IMMINENT")!;
@@ -92,8 +92,8 @@ describe("STOCKOUT_IMMINENT — kayıp hesabı", () => {
     // 60 stok / 10 adet = 6 gün kapak; eşiğin (7) hemen altında.
     // 6 − 7 = −1 → yine bugün. 6,9 günlük kapak için de aynı.
     const roomy = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(60), stock: 68 })],
-      orders: dailyOrders(eachDay(WEEK), 10, { unitCost: lira(60) }),
+      products: [makeProduct({ price: lira(100), stock: 68 })],
+      orders: dailyOrders(eachDay(WEEK), 10, {}),
     });
 
     const roomySignal = find(signalsOf(roomy), "STOCKOUT_IMMINENT");
@@ -109,10 +109,10 @@ describe("HIGH_RETURN_RATE — kayıp hesabı", () => {
     // Mal geri geldiği için kayıp, iade tutarı (₺3.000) değil,
     // 15 adetin getirmediği kârdır.
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(60), stock: 500 })],
+      products: [makeProduct({ price: lira(100), stock: 500 })],
       orders: [
         makeOrder({
-          lines: [makeLine({ quantity: 100, unitCost: lira(60) })],
+          lines: [makeLine({ quantity: 100 })],
           date: TODAY,
         }),
       ],
@@ -151,27 +151,27 @@ describe("AD_SPEND_LEAK — kayıp hesabı", () => {
 describe("Tüm risk sinyalleri", () => {
   const dataset = makeDataset({
     products: [
-      makeProduct({ id: "tukenen", price: lira(100), unitCost: lira(60), stock: 20 }),
+      makeProduct({ id: "tukenen", price: lira(100), stock: 20 }),
       makeProduct({
         id: "zarar",
         price: lira(100),
-        unitCost: lira(95),
         stock: 400,
       }),
-      makeProduct({ id: "olu", stock: 200, unitCost: lira(90) }),
+      makeProduct({ id: "olu", stock: 200 }),
     ],
+    unitCosts: { tukenen: lira(60), zarar: lira(95), olu: lira(90) },
+    commissionPercent: 15,
+    shippingCost: lira(8),
     orders: eachDay(WEEK).flatMap((date) => [
       makeOrder({
         id: `t-${date}`,
         date,
-        lines: [makeLine({ productId: "tukenen", quantity: 10, unitCost: lira(60) })],
+        lines: [makeLine({ productId: "tukenen", quantity: 10 })],
       }),
       makeOrder({
         id: `z-${date}`,
         date,
-        lines: [makeLine({ productId: "zarar", quantity: 8, unitCost: lira(95) })],
-        commission: lira(60),
-        shippingCost: lira(40),
+        lines: [makeLine({ productId: "zarar", quantity: 8 })],
       }),
     ]),
   });

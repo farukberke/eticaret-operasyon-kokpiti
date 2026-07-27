@@ -6,7 +6,8 @@ import {
   type DateRange,
   type IsoDate,
 } from "../domain/date-range";
-import { multiplyMoney, type Money } from "../domain/money";
+import { ZERO_MONEY, multiplyMoney, type Money } from "../domain/money";
+import type { CostCoverage } from "../domain/cost";
 import type { ProductPerformance } from "../domain/product";
 import type {
   Evidence,
@@ -18,7 +19,13 @@ import type {
 } from "../domain/signal";
 
 import { buildProductPerformance } from "./inventory-analyzer";
-import { aggregateStore, netProfitOf, netRevenueOf } from "./profit-calculator";
+import { createCostResolver, type CostResolver } from "./cost-resolver";
+import {
+  aggregateCoverage,
+  aggregateStore,
+  netProfitOf,
+  netRevenueOf,
+} from "./profit-calculator";
 import { DEFAULT_RULES, type RulesConfig } from "./rules.config";
 
 /**
@@ -36,9 +43,14 @@ export interface AnalysisContext {
   readonly performance: readonly ProductPerformance[];
   /** Dönemdeki gün sayısı — günlük etki hesaplarında paydadır. */
   readonly dayCount: number;
+  /** Maliyet çözümleyici — dedektörler ve raporlar aynı örneği paylaşır. */
+  readonly costs: CostResolver;
   readonly storeNetRevenue: Money;
+  /** Maliyeti bilinen ürünlerin toplam net kârı. */
   readonly storeNetProfit: Money;
   readonly previousStoreNetProfit: Money;
+  /** Kaç ürün ölçülemiyor ve ne kadar ciro kapsam dışı. */
+  readonly coverage: CostCoverage;
 }
 
 export function createAnalysisContext(params: {
@@ -48,19 +60,31 @@ export function createAnalysisContext(params: {
   rules?: RulesConfig;
 }): AnalysisContext {
   const rules = params.rules ?? DEFAULT_RULES;
-  const current = aggregateStore(params.dataset, params.range);
-  const previous = aggregateStore(params.dataset, previousPeriod(params.range));
+
+  // Çözümleyici analiz başına bir kez kurulur: 10 binden fazla sipariş satırı
+  // için her aramanın yeniden indeks kurması görünür maliyet demek.
+  const costs = createCostResolver(
+    params.dataset.costs,
+    new Map(params.dataset.products.map((p) => [p.id, p.category] as const)),
+  );
+
+  const current = aggregateStore(params.dataset, params.range, costs);
+  const previous = aggregateStore(params.dataset, previousPeriod(params.range), costs);
 
   return {
     dataset: params.dataset,
     range: params.range,
     today: params.today,
     rules,
-    performance: buildProductPerformance(params.dataset, params.range),
+    costs,
+    performance: buildProductPerformance(params.dataset, params.range, costs),
     dayCount: daysInRange(params.range),
     storeNetRevenue: netRevenueOf(current),
-    storeNetProfit: netProfitOf(current),
-    previousStoreNetProfit: netProfitOf(previous),
+    // `aggregateStore` yalnızca ölçülebilir ürünleri topladığı için sonuç
+    // her zaman hesaplanabilir; `?? ZERO_MONEY` savunma amaçlıdır.
+    storeNetProfit: netProfitOf(current) ?? ZERO_MONEY,
+    previousStoreNetProfit: netProfitOf(previous) ?? ZERO_MONEY,
+    coverage: aggregateCoverage(params.dataset, params.range, costs),
   };
 }
 

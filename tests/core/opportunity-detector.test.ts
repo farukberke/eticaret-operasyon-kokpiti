@@ -65,8 +65,9 @@ describe("RESTOCK_WINNER", () => {
     // 5/gün hız, 60 stok → 12 gün: kritik eşiğin (7) üstünde,
     // tazeleme eşiğinin (21) altında.
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(50), stock: 60 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(50) } }),
+      products: [makeProduct({ price: lira(100), stock: 60 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(50) },
     });
 
     expect(codesOf(dataset)).toContain("RESTOCK_WINNER");
@@ -76,8 +77,9 @@ describe("RESTOCK_WINNER", () => {
     // Bu ürün zaten STOCKOUT_IMMINENT riski olarak listede;
     // aynı ürünü iki kez göstermek kokpiti gürültüye boğardı.
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(50), stock: 15 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(50) } }),
+      products: [makeProduct({ price: lira(100), stock: 15 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(50) },
     });
 
     expect(codesOf(dataset)).not.toContain("RESTOCK_WINNER");
@@ -85,8 +87,9 @@ describe("RESTOCK_WINNER", () => {
 
   it("marj düşükse tetiklenmez", () => {
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(95), stock: 60 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(95) } }),
+      products: [makeProduct({ price: lira(100), stock: 60 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(95) },
     });
 
     expect(codesOf(dataset)).not.toContain("RESTOCK_WINNER");
@@ -97,8 +100,9 @@ describe("PRICE_TEST_CANDIDATE", () => {
   it("marj çok yüksekken tetiklenir", () => {
     // %55 marj, eşik %40.
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(45), stock: 5000 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(45) } }),
+      products: [makeProduct({ price: lira(100), stock: 5000 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(45) },
     });
 
     expect(codesOf(dataset)).toContain("PRICE_TEST_CANDIDATE");
@@ -106,8 +110,9 @@ describe("PRICE_TEST_CANDIDATE", () => {
 
   it("orta marjda tetiklenmez", () => {
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(70), stock: 5000 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(70) } }),
+      products: [makeProduct({ price: lira(100), stock: 5000 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(70) },
     });
 
     expect(codesOf(dataset)).not.toContain("PRICE_TEST_CANDIDATE");
@@ -117,8 +122,9 @@ describe("PRICE_TEST_CANDIDATE", () => {
 describe("HIGH_MARGIN_LOW_ADSPEND", () => {
   it("kâr eden ama reklam almayan üründe tetiklenir", () => {
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(50), stock: 5000 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(50) } }),
+      products: [makeProduct({ price: lira(100), stock: 5000 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(50) },
       adSpend: [],
     });
 
@@ -128,8 +134,9 @@ describe("HIGH_MARGIN_LOW_ADSPEND", () => {
   it("zaten reklam alıyorsa tetiklenmez", () => {
     // Ciro 3.500; %2 eşiğin üstünde harcama var.
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(50), stock: 5000 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(50) } }),
+      products: [makeProduct({ price: lira(100), stock: 5000 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(50) },
       adSpend: [{ date: TODAY, productId: "p1", amount: lira(300) }],
     });
 
@@ -139,8 +146,9 @@ describe("HIGH_MARGIN_LOW_ADSPEND", () => {
   it("stok yoksa tetiklenmez", () => {
     // Satamayacağın ürüne reklam vermek fırsat değil.
     const dataset = makeDataset({
-      products: [makeProduct({ price: lira(100), unitCost: lira(50), stock: 0 })],
-      orders: dailyOrders(eachDay(WEEK), 5, { line: { unitCost: lira(50) } }),
+      products: [makeProduct({ price: lira(100), stock: 0 })],
+      orders: dailyOrders(eachDay(WEEK), 5),
+      unitCosts: { p1: lira(50) },
     });
 
     expect(codesOf(dataset)).not.toContain("HIGH_MARGIN_LOW_ADSPEND");

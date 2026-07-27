@@ -26,7 +26,14 @@ export type RiskCode =
   /** Reklam harcaması yapılıyor ama getirisi harcamayı karşılamıyor. */
   | "AD_SPEND_LEAK"
   /** Mağaza genelinde ciro önceki döneme göre sert düştü. */
-  | "REVENUE_DROP";
+  | "REVENUE_DROP"
+  /**
+   * Bir ya da daha fazla üründe alış maliyeti girilmemiş.
+   *
+   * Ürün başına değil, **mağaza düzeyinde tek** sinyal: 12 ürün için 12 kart
+   * üretmek kuyruğu boğar ve hepsinin çözümü zaten tek bir yerde.
+   */
+  | "COST_MISSING";
 
 export type OpportunityCode =
   /** Satış hızı önceki döneme göre belirgin arttı. */
@@ -137,6 +144,23 @@ export function actionKeyOf(signal: Signal): string {
  */
 const CAPITAL_CODES: ReadonlySet<SignalCode> = new Set<SignalCode>(["DEAD_STOCK"]);
 
+/**
+ * Para değeri **ölçülemeyen** kodlar.
+ *
+ * `COST_MISSING`'in masadaki parası bir kayıp ya da kazanç değil; ne kadar
+ * cironun değerlendirilemediğidir. "Yaparsan ₺X korunur" dili buraya
+ * uymaz ve deftere de girmez.
+ */
+const UNMEASURED_CODES: ReadonlySet<SignalCode> = new Set<SignalCode>(["COST_MISSING"]);
+
+export type StakeKind = "profit" | "capital" | "unmeasured";
+
+export function stakeKindOf(code: SignalCode): StakeKind {
+  if (CAPITAL_CODES.has(code)) return "capital";
+  if (UNMEASURED_CODES.has(code)) return "unmeasured";
+  return "profit";
+}
+
 export function isCapitalSignal(code: SignalCode): boolean {
   return CAPITAL_CODES.has(code);
 }
@@ -147,7 +171,7 @@ export function isCapitalSignal(code: SignalCode): boolean {
  * Bir görev tamamlandığında deftere yazılacak tutar budur.
  */
 export function profitGainOf(signal: Signal): Money {
-  if (isCapitalSignal(signal.code)) {
+  if (stakeKindOf(signal.code) !== "profit") {
     return { minor: 0, currency: signal.moneyAtStake.currency };
   }
   return signal.moneyAtStake;

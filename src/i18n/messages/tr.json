@@ -12,7 +12,8 @@
     "profit": "Kâr",
     "risks": "Riskler",
     "opportunities": "Fırsatlar",
-    "products": "Ürünler"
+    "products": "Ürünler",
+    "costs": "Maliyetler"
   },
   "common": {
     "viewAll": "Tümü",
@@ -75,7 +76,8 @@
     "RESTOCK_WINNER": "{subject} kazandırıyor ama stoğu azalıyor",
     "PRICE_TEST_CANDIDATE": "{subject} için fiyat testi zamanı",
     "HIGH_MARGIN_LOW_ADSPEND": "{subject} desteklenmiyor",
-    "BUNDLE_CANDIDATE": "{subject} için paket fırsatı"
+    "BUNDLE_CANDIDATE": "{subject} için paket fırsatı",
+    "COST_MISSING": "{subject}: bazı ürünlerde maliyet eksik"
   },
   "action": {
     "STOCKOUT_IMMINENT": "Hemen stok tazele",
@@ -89,7 +91,8 @@
     "RESTOCK_WINNER": "Tedarik siparişi ver",
     "PRICE_TEST_CANDIDATE": "Fiyat testi başlat",
     "HIGH_MARGIN_LOW_ADSPEND": "Reklam bütçesi ayır",
-    "BUNDLE_CANDIDATE": "İki ürünü paket olarak listele"
+    "BUNDLE_CANDIDATE": "İki ürünü paket olarak listele",
+    "COST_MISSING": "Eksik maliyetleri gir"
   },
   "signalGroup": {
     "STOCKOUT_IMMINENT": "Stok tükeniyor",
@@ -103,7 +106,8 @@
     "RESTOCK_WINNER": "Stok tazeleme",
     "PRICE_TEST_CANDIDATE": "Fiyat testi adayı",
     "HIGH_MARGIN_LOW_ADSPEND": "Desteklenmeyen kazanan",
-    "BUNDLE_CANDIDATE": "Paket adayı"
+    "BUNDLE_CANDIDATE": "Paket adayı",
+    "COST_MISSING": "Maliyet eksik"
   },
   "evidence": {
     "velocityVsStock": "günde {perDay} adet satıyor · {stock} adet kaldı · {days} gün yeter",
@@ -120,7 +124,8 @@
     "boughtTogether": "{count} siparişte {partner} ile birlikte alındı",
     "leadTimeGap": "tedarik {leadDays} gün · {gapDays} gün stoksuz kalırsın",
     "excessReturns": "eşik %{threshold} · {excess} adet fazla iade",
-    "profitChange": "{change} değişim · {previous} → {current}"
+    "profitChange": "{change} değişim · {previous} → {current}",
+    "missingCost": "{products} üründe alış maliyeti yok · {revenue} ciro değerlendirilemiyor"
   },
   "products": {
     "title": "Ürün performansı",
@@ -136,7 +141,10 @@
     "daysOfCover": "Stok günü",
     "daysUnit": "{days} gün",
     "empty": "Ürün bulunamadı",
-    "emptyDescription": "Bu dönemde gösterilecek ürün yok."
+    "emptyDescription": "Bu dönemde gösterilecek ürün yok.",
+    "unitCost": "Alış maliyeti",
+    "costStatus": "Durum",
+    "costMissing": "Maliyet eksik"
   },
   "sales": {
     "title": "Satış",
@@ -163,7 +171,9 @@
     "netProfit": "Net kâr",
     "margin": "Marj",
     "marginChange": "Marj değişimi",
-    "dailyTitle": "Günlük seyir"
+    "dailyTitle": "Günlük seyir",
+    "coverage": "{count} üründe maliyet eksik · {revenue} ciro değerlendirilemiyor",
+    "vatNotice": "Tüm hesaplar KDV hariç modeldir. Rakamlar operasyon kararı içindir, kesin muhasebe sonucu değildir."
   },
   "risks": {
     "title": "Riskler",
@@ -212,7 +222,11 @@
       "do": "{amount} serbest kalır",
       "skip": "{amount} bağlı kalır"
     },
-    "deadlineOverdue": "Gecikti · {days} gün"
+    "deadlineOverdue": "Gecikti · {days} gün",
+    "unmeasured": {
+      "do": "{amount} ciro ölçülebilir olur",
+      "skip": "{amount} ciro kör kalır"
+    }
   },
   "done": {
     "STOCKOUT_IMMINENT": "Sipariş verdim",
@@ -226,7 +240,8 @@
     "RESTOCK_WINNER": "Sipariş verdim",
     "PRICE_TEST_CANDIDATE": "Testi başlattım",
     "HIGH_MARGIN_LOW_ADSPEND": "Bütçe ayırdım",
-    "BUNDLE_CANDIDATE": "Paketi oluşturdum"
+    "BUNDLE_CANDIDATE": "Paketi oluşturdum",
+    "COST_MISSING": "Maliyetleri girdim"
   },
   "queue": {
     "filterOpen": "Açık",
@@ -252,5 +267,35 @@
     "yesterday": "Dün korunan",
     "thisMonth": "Bu ay korunan",
     "taskCount": "{count} iş"
+  },
+  "costs": {
+    "title": "Maliyetler",
+    "description": "Pazaryerinin bilmediği veri — gerçek net kâr buna bağlı",
+    "product": "Ürün",
+    "sku": "SKU",
+    "unitCost": "Alış maliyeti",
+    "commission": "Komisyon",
+    "shipping": "Kargo",
+    "packaging": "Paketleme",
+    "effectiveFrom": "Geçerlilik tarihi",
+    "status": "Durum",
+    "complete": "Girildi",
+    "missing": "Maliyet eksik",
+    "edit": "Düzenle",
+    "save": "Kaydet",
+    "cancel": "Vazgeç",
+    "saved": "Kaydedildi",
+    "optional": "isteğe bağlı",
+    "commissionHint": "Boş bırakılırsa kategori, o da yoksa mağaza varsayılanı kullanılır.",
+    "shippingHint": "Paket başına. Bir siparişte aynı üründen kaç adet olursa olsun bir kez sayılır.",
+    "packagingHint": "Adet başına.",
+    "effectiveHint": "Bu tarihten itibaren geçerli olur. Önceki tarihli siparişler eski maliyetle hesaplanmaya devam eder.",
+    "pastDateWarning": "Geçmiş bir tarih girdiniz: o tarihten sonraki siparişlerin kâr analizleri yeniden hesaplanacak.",
+    "vatNotice": "Tüm hesaplar KDV hariç modeldir. Rakamlar operasyon kararı içindir, kesin muhasebe sonucu değildir.",
+    "missingSummary": "{count} üründe maliyet eksik · {revenue} ciro değerlendirilemiyor",
+    "allComplete": "Tüm ürünlerin maliyeti girilmiş",
+    "importTitle": "Toplu içe aktarma",
+    "importSoon": "CSV ile toplu içe aktarma bir sonraki adımda geliyor. Excel dosyalarını CSV olarak kaydetmeniz gerekecek.",
+    "invalid": "Girilen değer geçersiz"
   }
 }

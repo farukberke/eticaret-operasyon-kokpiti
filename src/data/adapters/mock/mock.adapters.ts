@@ -1,4 +1,11 @@
-import { todayIn, type DateRange, type IsoDate } from "@/core/domain";
+import { cache } from "react";
+
+import {
+  todayIn,
+  type DateRange,
+  type IsoDate,
+  type StoreDataset,
+} from "@/core/domain";
 import type {
   ClockPort,
   PriorityPort,
@@ -7,14 +14,18 @@ import type {
   SalesPort,
   SignalPort,
 } from "@/core/ports";
-import { createAnalysisContext } from "@/core/services/analysis-context";
-import { buildProductPerformance } from "@/core/services/inventory-analyzer";
+import {
+  createAnalysisContext,
+  type AnalysisContext,
+} from "@/core/services/analysis-context";
 import { detectOpportunities } from "@/core/services/opportunity-detector";
 import { detectRisks } from "@/core/services/risk-detector";
 import { buildPriorities } from "@/core/services/priority-engine";
 import { buildProfitSummary, buildSalesSummary } from "@/core/services/summary-builder";
 
+import { costContainer } from "../../cost-container";
 import { buildDataset } from "../../mock/seed";
+import { mergeCostTables } from "../local/file-cost.adapter";
 
 /**
  * MOCK ADAPTER'LAR — portların v1 uygulaması.
@@ -45,54 +56,78 @@ export const mockClock: ClockPort = {
   },
 };
 
-/** Her istek aynı bağlamı yeniden kurmasın diye gün + aralık bazlı önbellek. */
-const contextCache = new Map<string, ReturnType<typeof createAnalysisContext>>();
+/**
+ * Üretilmiş veriyi kullanıcının kaydettiği maliyetlerle birleştirir.
+ *
+ * Tohumlanan maliyetler bir başlangıç noktası; kullanıcı bir ürünü
+ * düzenlediğinde onunki kazanır.
+ */
+async function datasetFor(today: IsoDate): Promise<StoreDataset> {
+  const base = buildDataset(today);
+  const saved = await costContainer.costs.load();
+  return { ...base, costs: mergeCostTables(base.costs, saved) };
+}
 
-function contextFor(range: DateRange) {
+/**
+ * Analiz bağlamı **istek başına** bir kez kurulur.
+ *
+ * Bir sayfa render'ı beş ayrı port çağırıyor (öncelikler, riskler, fırsatlar,
+ * satış, kâr); hepsi aynı bağlamı paylaşmalı, yoksa aynı hesap beş kez
+ * yapılır.
+ *
+ * Modül düzeyinde bir `Map` kullanmak burada **hataydı ve hata verdi**:
+ * sunucu eylemleri ile sayfa bileşenleri farklı modül grafiklerinde
+ * paketlenebiliyor, dolayısıyla eylemden yapılan "önbelleği temizle" çağrısı
+ * sayfanın gördüğü örneğe ulaşmıyordu. Kullanıcı maliyeti kaydediyor,
+ * maliyet ekranı güncelleniyor ama ürünler ve kâr sayfaları eski rakamlarda
+ * kalıyordu.
+ *
+ * `React.cache` istek sınırında yaşar: istekler arasında hiçbir şey
+ * taşınmaz, dolayısıyla bayat veri de olamaz.
+ */
+const contextFor = cache(async (from: string, to: string): Promise<AnalysisContext> => {
   const today = mockClock.today();
-  const key = `${today}|${range.from}|${range.to}`;
-
-  const cached = contextCache.get(key);
-  if (cached) return cached;
-
-  const context = createAnalysisContext({
-    dataset: buildDataset(today),
-    range,
+  return createAnalysisContext({
+    dataset: await datasetFor(today),
+    range: { from, to },
     today,
   });
-  contextCache.set(key, context);
-  return context;
-}
+});
+
+const contextForRange = (range: DateRange): Promise<AnalysisContext> =>
+  contextFor(range.from, range.to);
 
 export const mockSalesPort: SalesPort = {
   async getSummary(range) {
-    return buildSalesSummary(buildDataset(mockClock.today()), range);
+    const context = await contextForRange(range);
+    return buildSalesSummary(context.dataset, range, context.costs);
   },
 };
 
 export const mockProfitPort: ProfitPort = {
   async getSummary(range) {
-    return buildProfitSummary(buildDataset(mockClock.today()), range);
+    const context = await contextForRange(range);
+    return buildProfitSummary(context.dataset, range, context.costs);
   },
 };
 
 export const mockProductPort: ProductPort = {
   async getPerformance(range) {
-    return buildProductPerformance(buildDataset(mockClock.today()), range);
+    return (await contextForRange(range)).performance;
   },
 };
 
 export const mockSignalPort: SignalPort = {
   async getRisks(range) {
-    return detectRisks(contextFor(range));
+    return detectRisks(await contextForRange(range));
   },
   async getOpportunities(range) {
-    return detectOpportunities(contextFor(range));
+    return detectOpportunities(await contextForRange(range));
   },
 };
 
 export const mockPriorityPort: PriorityPort = {
   async getPriorities(range) {
-    return buildPriorities(contextFor(range));
+    return buildPriorities(await contextForRange(range));
   },
 };

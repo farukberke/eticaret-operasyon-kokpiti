@@ -1,16 +1,25 @@
+import type { CostTable } from "./cost";
 import type { AdSpendRecord, Order, ReturnRecord } from "./order";
 import type { Product } from "./product";
 
 /**
- * Bir mağazanın ham verisi.
+ * Bir mağazanın analiz girdisi.
  *
- * Portların döndürdüğü özetler bu veriden **çekirdek servisler** tarafından
- * hesaplanır. v1'de mock üretici, v2'de pazaryeri adapter'ı bu şekli doldurur;
- * arada kalan hesap mantığı ikisinde de aynıdır.
+ * İki farklı kaynaktan gelen veriyi bir araya getirir ve bu ayrım ürünün
+ * tezidir:
+ *
+ * • `products`, `orders`, `returns`, `adSpend` → **pazaryerinin bildiği**.
+ *   İleride Trendyol adapter'ı bunları API'den çekecek.
+ * • `costs` → **yalnızca satıcının bildiği**. Hiçbir pazaryeri alış
+ *   maliyetini vermez; bu veri `CostPort` üzerinden kullanıcıdan gelir.
+ *
+ * İkisinin burada birleşmesi bilinçli: çekirdek servisler tek bir girdi
+ * görür, kaynakların farklı olması adapter'ın sorunudur.
  */
 export interface StoreDataset {
   readonly products: readonly Product[];
   readonly orders: readonly Order[];
   readonly returns: readonly ReturnRecord[];
   readonly adSpend: readonly AdSpendRecord[];
+  readonly costs: CostTable;
 }

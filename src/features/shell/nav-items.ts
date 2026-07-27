@@ -6,6 +6,7 @@ import {
   PiggyBank,
   Sparkles,
   TrendingUp,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -23,7 +24,8 @@ export interface NavItem {
     | "/profit"
     | "/risks"
     | "/opportunities"
-    | "/products";
+    | "/products"
+    | "/costs";
   /** `nav.*` sözlük anahtarı. */
   readonly key: string;
   readonly icon: LucideIcon;
@@ -40,4 +42,5 @@ export const DETAIL_NAV: readonly NavItem[] = [
   { href: "/risks", key: "risks", icon: AlertTriangle },
   { href: "/opportunities", key: "opportunities", icon: Sparkles },
   { href: "/products", key: "products", icon: Package },
+  { href: "/costs", key: "costs", icon: Wallet },
 ];

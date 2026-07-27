@@ -12,7 +12,8 @@
     "profit": "Profit",
     "risks": "Risks",
     "opportunities": "Opportunities",
-    "products": "Products"
+    "products": "Products",
+    "costs": "Costs"
   },
   "common": {
     "viewAll": "View all",
@@ -75,7 +76,8 @@
     "RESTOCK_WINNER": "{subject} earns well but stock is running low",
     "PRICE_TEST_CANDIDATE": "Time to price-test {subject}",
     "HIGH_MARGIN_LOW_ADSPEND": "{subject} has no ad support",
-    "BUNDLE_CANDIDATE": "Bundle opportunity for {subject}"
+    "BUNDLE_CANDIDATE": "Bundle opportunity for {subject}",
+    "COST_MISSING": "{subject}: unit cost missing on some products"
   },
   "action": {
     "STOCKOUT_IMMINENT": "Reorder stock now",
@@ -89,7 +91,8 @@
     "RESTOCK_WINNER": "Place a supply order",
     "PRICE_TEST_CANDIDATE": "Run a price-increase test",
     "HIGH_MARGIN_LOW_ADSPEND": "Allocate ad budget",
-    "BUNDLE_CANDIDATE": "List the two products as a bundle"
+    "BUNDLE_CANDIDATE": "List the two products as a bundle",
+    "COST_MISSING": "Enter the missing costs"
   },
   "signalGroup": {
     "STOCKOUT_IMMINENT": "Running out of stock",
@@ -103,7 +106,8 @@
     "RESTOCK_WINNER": "Restock winner",
     "PRICE_TEST_CANDIDATE": "Price-test candidate",
     "HIGH_MARGIN_LOW_ADSPEND": "Unsupported winner",
-    "BUNDLE_CANDIDATE": "Bundle candidate"
+    "BUNDLE_CANDIDATE": "Bundle candidate",
+    "COST_MISSING": "Cost missing"
   },
   "evidence": {
     "velocityVsStock": "sells {perDay}/day · {stock} left · {days} days of cover",
@@ -120,7 +124,8 @@
     "boughtTogether": "bought with {partner} in {count} orders",
     "leadTimeGap": "{leadDays}-day lead time · {gapDays} days out of stock",
     "excessReturns": "threshold {threshold} · {excess} extra returns",
-    "profitChange": "{change} change · {previous} → {current}"
+    "profitChange": "{change} change · {previous} → {current}",
+    "missingCost": "{products} products have no unit cost · {revenue} revenue can't be evaluated"
   },
   "products": {
     "title": "Product performance",
@@ -136,7 +141,10 @@
     "daysOfCover": "Days of cover",
     "daysUnit": "{days} days",
     "empty": "No products found",
-    "emptyDescription": "Nothing to show for this period."
+    "emptyDescription": "Nothing to show for this period.",
+    "unitCost": "Unit cost",
+    "costStatus": "Status",
+    "costMissing": "Cost missing"
   },
   "sales": {
     "title": "Sales",
@@ -163,7 +171,9 @@
     "netProfit": "Net profit",
     "margin": "Margin",
     "marginChange": "Margin change",
-    "dailyTitle": "Daily trend"
+    "dailyTitle": "Daily trend",
+    "coverage": "{count} products missing cost · {revenue} revenue can't be evaluated",
+    "vatNotice": "All figures exclude VAT. They are for operational decisions, not accounting."
   },
   "risks": {
     "title": "Risks",
@@ -212,7 +222,11 @@
       "do": "{amount} freed up",
       "skip": "{amount} stays tied up"
     },
-    "deadlineOverdue": "Overdue · {days} days"
+    "deadlineOverdue": "Overdue · {days} days",
+    "unmeasured": {
+      "do": "{amount} revenue becomes measurable",
+      "skip": "{amount} revenue stays blind"
+    }
   },
   "done": {
     "STOCKOUT_IMMINENT": "Ordered",
@@ -226,7 +240,8 @@
     "RESTOCK_WINNER": "Ordered",
     "PRICE_TEST_CANDIDATE": "Started the test",
     "HIGH_MARGIN_LOW_ADSPEND": "Allocated budget",
-    "BUNDLE_CANDIDATE": "Created the bundle"
+    "BUNDLE_CANDIDATE": "Created the bundle",
+    "COST_MISSING": "Costs entered"
   },
   "queue": {
     "filterOpen": "Open",
@@ -252,5 +267,35 @@
     "yesterday": "Protected yesterday",
     "thisMonth": "Protected this month",
     "taskCount": "{count} tasks"
+  },
+  "costs": {
+    "title": "Costs",
+    "description": "The data marketplaces don't have — real net profit depends on it",
+    "product": "Product",
+    "sku": "SKU",
+    "unitCost": "Unit cost",
+    "commission": "Commission",
+    "shipping": "Shipping",
+    "packaging": "Packaging",
+    "effectiveFrom": "Effective from",
+    "status": "Status",
+    "complete": "Entered",
+    "missing": "Cost missing",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Saved",
+    "optional": "optional",
+    "commissionHint": "Left empty, the category default applies, then the store default.",
+    "shippingHint": "Per package. Counted once per order regardless of quantity.",
+    "packagingHint": "Per unit.",
+    "effectiveHint": "Applies from this date on. Earlier orders keep using the earlier cost.",
+    "pastDateWarning": "You entered a past date: profit analyses for orders after that date will be recalculated.",
+    "vatNotice": "All figures exclude VAT. They are for operational decisions, not accounting.",
+    "missingSummary": "{count} products missing cost · {revenue} revenue can't be evaluated",
+    "allComplete": "Every product has a cost",
+    "importTitle": "Bulk import",
+    "importSoon": "CSV bulk import lands in the next step. Excel files will need to be saved as CSV.",
+    "invalid": "Invalid value"
   }
 }

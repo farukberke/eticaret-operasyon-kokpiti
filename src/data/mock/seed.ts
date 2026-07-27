@@ -9,6 +9,7 @@ import { CATALOG } from "./catalog";
 import { generateAdSpend } from "./generators/adspend.gen";
 import { generateOrders } from "./generators/orders.gen";
 import { generateReturns } from "./generators/returns.gen";
+import { seedCostTable } from "./seed-costs";
 
 /**
  * Demo veri kümesinin tek üretim noktası.
@@ -48,6 +49,10 @@ export function buildDataset(today: IsoDate): StoreDataset {
     orders,
     returns,
     adSpend,
+    // Tohumlanan maliyetler: gerçek kullanıcının maliyet ekranından
+    // gireceğiyle aynı biçimde. Adapter, kullanıcının kaydettiği
+    // maliyetleri bunun üzerine bindirir.
+    costs: seedCostTable(),
   };
 
   // Aynı gün içindeki tüm istekler tek üretimi paylaşır.

@@ -1,4 +1,4 @@
-import type { ProductPerformance } from "@/core/domain";
+import type { CostStatus, ProductPerformance } from "@/core/domain";
 import type { Locale } from "@/i18n/routing";
 import { EMPTY, formatMoney, formatNumber, formatPercent } from "@/lib/format";
 
@@ -17,10 +17,14 @@ export interface ProductRow {
   readonly name: string;
   readonly category: string;
 
+  /** Maliyet verisi girilmiş mi — tabloda rozetle gösterilir. */
+  readonly costStatus: CostStatus;
+
   /** Sıralama için ham değerler. */
   readonly unitsSold: number;
   readonly netRevenueMinor: number;
-  readonly netProfitMinor: number;
+  /** Maliyet eksikse `null`: sıralamada sona düşer, sıfır gibi davranmaz. */
+  readonly netProfitMinor: number | null;
   readonly marginRatio: number | null;
   readonly returnRate: number | null;
   readonly stock: number;
@@ -29,6 +33,7 @@ export interface ProductRow {
   /** Ekranda görünen biçimlenmiş metinler. */
   readonly unitsSoldLabel: string;
   readonly netRevenueLabel: string;
+  readonly unitCostLabel: string;
   readonly netProfitLabel: string;
   readonly marginLabel: string;
   readonly returnRateLabel: string;
@@ -37,6 +42,8 @@ export interface ProductRow {
 }
 
 export interface ProductTableLabels {
+  readonly unitCost: string;
+  readonly costMissing: string;
   readonly name: string;
   readonly category: string;
   readonly unitsSold: string;
@@ -61,9 +68,11 @@ export function toProductRow(
     name: performance.product.name,
     category: performance.product.category,
 
+    costStatus: performance.costStatus,
+
     unitsSold: performance.unitsSold,
     netRevenueMinor: performance.netRevenue.minor,
-    netProfitMinor: performance.netProfit.minor,
+    netProfitMinor: performance.netProfit?.minor ?? null,
     marginRatio: performance.marginRatio,
     returnRate: performance.returnRate,
     stock: performance.product.stock,
@@ -71,7 +80,16 @@ export function toProductRow(
 
     unitsSoldLabel: formatNumber(performance.unitsSold, locale),
     netRevenueLabel: formatMoney(performance.netRevenue, locale),
-    netProfitLabel: formatMoney(performance.netProfit, locale),
+    /**
+     * Maliyet eksikse sıfır değil "—".
+     * Sıfır yazmak "bu ürün hiç kazandırmıyor" demektir; oysa bilmiyoruz.
+     */
+    unitCostLabel:
+      performance.unitCost === null ? EMPTY : formatMoney(performance.unitCost, locale),
+    netProfitLabel:
+      performance.netProfit === null
+        ? EMPTY
+        : formatMoney(performance.netProfit, locale),
     marginLabel: formatPercent(performance.marginRatio, locale),
     returnRateLabel: formatPercent(performance.returnRate, locale),
     stockLabel: formatNumber(performance.product.stock, locale),

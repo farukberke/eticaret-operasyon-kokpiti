@@ -135,7 +135,7 @@ describe("Öncelik listesi", () => {
 
 describe("Özetler", () => {
   it("makul büyüklükte bir mağaza gösterir", () => {
-    const sales = buildSalesSummary(dataset, RANGE);
+    const sales = buildSalesSummary(dataset, RANGE, context.costs);
 
     expect(sales.orderCount).toBeGreaterThan(100);
     expect(toMajor(sales.netRevenue)).toBeGreaterThan(0);
@@ -143,7 +143,7 @@ describe("Özetler", () => {
   });
 
   it("kâr özeti gerçekçi bir marj verir", () => {
-    const profit = buildProfitSummary(dataset, RANGE);
+    const profit = buildProfitSummary(dataset, RANGE, context.costs);
 
     expect(toMajor(profit.netProfit)).toBeGreaterThan(0);
     // E-ticarette %5–%45 bandı dışı, katalog ayarının bozulduğunu gösterir.
@@ -152,7 +152,7 @@ describe("Özetler", () => {
   });
 
   it("grafikte boş gün bırakmaz", () => {
-    const sales = buildSalesSummary(dataset, RANGE);
+    const sales = buildSalesSummary(dataset, RANGE, context.costs);
     expect(sales.daily.every((point) => point.orders > 0)).toBe(true);
   });
 });

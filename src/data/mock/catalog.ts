@@ -1,4 +1,6 @@
-import { lira, type Product } from "@/core/domain";
+import { lira, type Money, type Product } from "@/core/domain";
+
+import { seedFrom } from "./prng";
 
 /**
  * DEMO KATALOĞU — 40 ürün.
@@ -11,6 +13,9 @@ import { lira, type Product } from "@/core/domain";
  * Her ürünün bağırdığı bir panel, hiçbir ürünün bağırmadığı panel kadar
  * işe yaramaz; satıcı neye bakacağını yine bilemez.
  */
+
+/** Katalogun listelenme tarihi — maliyet kayıtlarının geçerlilik başlangıcı. */
+export const CATALOG_LISTED_AT = "2025-11-01";
 
 export type Archetype =
   /** Sessiz çoğunluk: sağlıklı marj, dengeli stok, sinyal üretmez. */
@@ -54,6 +59,14 @@ export interface CatalogEntry {
   readonly product: Product;
   readonly archetype: Archetype;
   readonly demand: DemandProfile;
+  /**
+   * Demo mağazanın alış maliyeti.
+   *
+   * Ürünün ÜZERİNDE değil, yanında duruyor: pazaryeri bu veriyi vermez.
+   * `seedCosts()` bunu `ProductCost` kayıtlarına çevirir — tıpkı gerçek
+   * kullanıcının maliyet ekranından gireceği gibi.
+   */
+  readonly unitCost: Money;
 }
 
 const DEMAND_BY_ARCHETYPE: Record<Archetype, DemandProfile> = {
@@ -239,18 +252,33 @@ export const CATALOG: readonly CatalogEntry[] = ROWS.map(
       product: {
         id,
         sku: `SKU-${id.toUpperCase().replace(/-/g, "")}`,
+        barcode: `868${String(Math.abs(seedFrom(id)) % 10_000_000_000).padStart(10, "0")}`,
         name,
         category,
         price: lira(price),
-        unitCost: lira(cost),
         stock,
-        listedAt: "2025-11-01",
+        listedAt: CATALOG_LISTED_AT,
       },
+      unitCost: lira(cost),
       archetype,
       demand: partner ? { ...baseDemand, bundlePartnerId: partner } : baseDemand,
     } satisfies CatalogEntry;
   },
 );
+
+/**
+ * Maliyeti bilinçli olarak GİRİLMEMİŞ ürünler.
+ *
+ * Yeni listelenmiş ürünlerde maliyetin henüz girilmemiş olması gerçek bir
+ * durumdur. Demo verisinde de bulunması, "maliyet eksik" davranışının
+ * ekranlarda görünmesini sağlar — özelliğin kendisini görünmez kılmak,
+ * kullanıcının onu hiç fark etmemesi demek olurdu.
+ */
+export const PRODUCTS_WITHOUT_COST: readonly string[] = [
+  "mum-set",
+  "terlik",
+  "sampuan",
+];
 
 export const CATEGORIES: readonly string[] = [
   ...new Set(CATALOG.map((entry) => entry.product.category)),

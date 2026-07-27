@@ -1,3 +1,4 @@
+import type { CostCoverage } from "./cost";
 import type { DateRange, IsoDate } from "./date-range";
 import type { Money } from "./money";
 
@@ -61,11 +62,23 @@ export interface ProfitSummary {
   readonly cogs: Money;
   readonly commission: Money;
   readonly shipping: Money;
+  /** Paketleme / operasyon gideri — maliyet modelinden gelir. */
+  readonly packaging: Money;
   readonly adSpend: Money;
 
+  /** **Yalnızca maliyeti bilinen ürünlerin** net kârı. */
   readonly netProfit: Money;
   /** netProfit / netRevenue. Ciro sıfırsa `null`. */
   readonly marginRatio: number | null;
+
+  /**
+   * Maliyet kapsamı.
+   *
+   * Eksik maliyetli ürünleri toplamdan çıkarmak doğru ama yeterli değil:
+   * kullanıcı eksik bir toplamı tam sanmamalı. Ekranda
+   * "X üründe maliyet eksik · ₺Y ciro değerlendirilemiyor" olarak görünür.
+   */
+  readonly coverage: CostCoverage;
 
   readonly profitTrend: MoneyTrend;
   /**

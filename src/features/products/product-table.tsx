@@ -31,6 +31,8 @@ export async function ProductTable({
   );
 
   const labels: ProductTableLabels = {
+    unitCost: t("unitCost"),
+    costMissing: t("costMissing"),
     name: t("name"),
     category: t("category"),
     unitsSold: t("unitsSold"),

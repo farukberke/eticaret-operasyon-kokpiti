@@ -2,6 +2,7 @@ import type { DateRange, IsoDate } from "../domain/date-range";
 import type { ProfitSummary, SalesSummary } from "../domain/metrics";
 import type { PriorityAction } from "../domain/priority";
 import type { ProductPerformance } from "../domain/product";
+import type { CostDefault, CostTable, ProductCost } from "../domain/cost";
 import type { Signal } from "../domain/signal";
 import type { TaskState } from "../domain/task";
 
@@ -26,7 +27,7 @@ export interface ProfitPort {
 }
 
 export interface ProductPort {
-  getPerformance(range: DateRange): Promise<ProductPerformance[]>;
+  getPerformance(range: DateRange): Promise<readonly ProductPerformance[]>;
 }
 
 export interface SignalPort {
@@ -54,6 +55,24 @@ export interface PriorityPort {
  */
 export interface ClockPort {
   today(): IsoDate;
+}
+
+/**
+ * Maliyet verisinin kalıcılığı.
+ *
+ * Görev durumundan farklı olarak bu veri **sunucuda okunabilir olmak
+ * zorunda**: kâr hesabı sunucu tarafında yapılıyor ve maliyet o hesabın
+ * girdisi. Bu yüzden ilk uygulama `localStorage` değil, sunucu tarafında
+ * dosya tabanlı olacak.
+ *
+ * Yazma işlemleri `productId + effectiveFrom` anahtarıyla **upsert** eder:
+ * aynı ürün ve aynı geçerlilik tarihi için iki çelişkili kayıt oluşamaz.
+ */
+export interface CostPort {
+  load(): Promise<CostTable>;
+  saveProductCost(cost: ProductCost): Promise<void>;
+  removeProductCost(productId: string, effectiveFrom: IsoDate): Promise<void>;
+  saveDefault(entry: CostDefault): Promise<void>;
 }
 
 /**

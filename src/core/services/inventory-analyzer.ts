@@ -1,13 +1,23 @@
-import type { StoreDataset } from "../domain/dataset";
-import { daysInRange, previousPeriod, type DateRange } from "../domain/date-range";
-import { ZERO_MONEY, moneyRatio, multiplyMoney, type Money } from "../domain/money";
-import type { ProductPerformance } from "../domain/product";
+import {
+  ZERO_MONEY,
+  costStatusOf,
+  daysInRange,
+  moneyRatio,
+  multiplyMoney,
+  previousPeriod,
+  type DateRange,
+  type Money,
+  type ProductPerformance,
+  type StoreDataset,
+} from "../domain";
 
+import type { CostResolver } from "./cost-resolver";
 import {
   aggregateByProduct,
+  emptyAggregate,
+  marginRatioOf,
   netProfitOf,
   netRevenueOf,
-  type ProductAggregate,
 } from "./profit-calculator";
 
 /**
@@ -19,33 +29,21 @@ import {
  * konuşması gerekir.
  */
 
-function emptyAggregate(productId: string): ProductAggregate {
-  return {
-    productId,
-    unitsSold: 0,
-    unitsReturned: 0,
-    grossRevenue: ZERO_MONEY,
-    discount: ZERO_MONEY,
-    refunds: ZERO_MONEY,
-    cogs: ZERO_MONEY,
-    commission: ZERO_MONEY,
-    shipping: ZERO_MONEY,
-    adSpend: ZERO_MONEY,
-  };
-}
-
 /** Satış hızı sıfırsa `null` — "sonsuz gün yeter" demek ölü stoğu gizler. */
 export function daysOfCoverOf(stock: number, dailyVelocity: number): number | null {
   if (dailyVelocity <= 0) return null;
   return stock / dailyVelocity;
 }
 
-/** Bağlı sermaye: elde kalan stoğun alış maliyeti cinsinden değeri. */
-export function stockValueOf(product: { stock: number; unitCost: Money }): Money {
-  return {
-    minor: Math.round(product.unitCost.minor * product.stock),
-    currency: product.unitCost.currency,
-  };
+/**
+ * Bağlı sermaye: elde kalan stoğun alış maliyeti cinsinden değeri.
+ *
+ * Maliyet bilinmiyorsa `null` — kaç liranın rafta beklediğini bilmiyoruz ve
+ * tahmin etmek ölü stok uyarısını uydurma bir tutarla üretirdi.
+ */
+export function stockValueOf(stock: number, unitCost: Money | null): Money | null {
+  if (unitCost === null) return null;
+  return multiplyMoney(unitCost, stock);
 }
 
 /**
@@ -57,9 +55,10 @@ export function stockValueOf(product: { stock: number; unitCost: Money }): Money
 export function buildProductPerformance(
   dataset: StoreDataset,
   range: DateRange,
+  costs: CostResolver,
 ): ProductPerformance[] {
-  const current = aggregateByProduct(dataset, range);
-  const previous = aggregateByProduct(dataset, previousPeriod(range));
+  const current = aggregateByProduct(dataset, range, costs);
+  const previous = aggregateByProduct(dataset, previousPeriod(range), costs);
 
   const dayCount = daysInRange(range);
   const previousDayCount = daysInRange(previousPeriod(range));
@@ -68,8 +67,17 @@ export function buildProductPerformance(
     const aggregate = current.get(product.id) ?? emptyAggregate(product.id);
     const priorAggregate = previous.get(product.id) ?? emptyAggregate(product.id);
 
+    /**
+     * Hiç satışı olmayan ürünlerde toplayıcı "maliyet bilinir" der (hiç satır
+     * görmediği için). Ölü stok tespiti bağlı sermayeye ihtiyaç duyduğundan
+     * maliyet durumunu bugünün kaydından ayrıca sormamız gerekiyor.
+     */
+    const todayCost = costs.resolve(product.id, range.to);
+    const costKnown = aggregate.costKnown && todayCost.unitCost !== null;
+    const measured = { ...aggregate, costKnown };
+
     const netRevenue = netRevenueOf(aggregate);
-    const netProfit = netProfitOf(aggregate);
+    const netProfit = netProfitOf(measured);
 
     const netUnits = aggregate.unitsSold - aggregate.unitsReturned;
     const dailyVelocity = dayCount > 0 ? netUnits / dayCount : 0;
@@ -90,9 +98,22 @@ export function buildProductPerformance(
       shipping: aggregate.shipping,
       adSpend: aggregate.adSpend,
 
+      costStatus: costStatusOf({
+        ...todayCost,
+        unitCost: costKnown ? todayCost.unitCost : null,
+      }),
+      unitCost: todayCost.unitCost,
+      commissionRate: todayCost.commissionRate,
+      costEffectiveFrom: costs.latestFor(product.id)?.effectiveFrom ?? null,
+
       netProfit,
-      unitProfit: netUnits > 0 ? multiplyMoney(netProfit, 1 / netUnits) : ZERO_MONEY,
-      marginRatio: moneyRatio(netProfit, netRevenue),
+      unitProfit:
+        netProfit !== null && netUnits > 0
+          ? multiplyMoney(netProfit, 1 / netUnits)
+          : netProfit !== null
+            ? ZERO_MONEY
+            : null,
+      marginRatio: marginRatioOf(measured),
       returnRate:
         aggregate.unitsSold > 0 ? aggregate.unitsReturned / aggregate.unitsSold : null,
       roas: moneyRatio(netRevenue, aggregate.adSpend),
@@ -101,12 +122,9 @@ export function buildProductPerformance(
       daysOfCover: daysOfCoverOf(product.stock, dailyVelocity),
       previousDailyVelocity:
         previousDayCount > 0 ? previousNetUnits / previousDayCount : 0,
-      previousMarginRatio: moneyRatio(
-        netProfitOf(priorAggregate),
-        netRevenueOf(priorAggregate),
-      ),
+      previousMarginRatio: marginRatioOf(priorAggregate),
 
-      stockValue: stockValueOf(product),
+      stockValue: stockValueOf(product.stock, costKnown ? todayCost.unitCost : null),
     } satisfies ProductPerformance;
   });
 }

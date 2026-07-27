@@ -1,24 +1,33 @@
 import type { IsoDate } from "./date-range";
 import type { Money } from "./money";
 
+/**
+ * Sipariş verisi — **pazaryerinin bildiği** her şey.
+ *
+ * Bilinçli olarak burada OLMAYANLAR:
+ *
+ * • `unitCost` — pazaryeri senin alış maliyetini bilmez. Maliyet, sipariş
+ *   tarihinde geçerli olan kayıttan çözümlenir (`CostResolver`). Satıra
+ *   dondurulmuş bir maliyet, kullanıcı maliyetini **sonradan** girdiğinde
+ *   (ki normal akış budur: önce pazaryeri bağlanır, sonra maliyet girilir)
+ *   geçmiş siparişlerin kârını hesaplanamaz kılardı.
+ *
+ * • `commission` / `shippingCost` — bunlar da maliyet modelinden gelir.
+ *   Böylece kullanıcı komisyon oranını kategori bazında tanımlayabilir ve
+ *   tek yerden yönetebilir.
+ */
 export interface OrderLine {
   readonly productId: string;
   readonly quantity: number;
   /** Satış anındaki birim fiyat — ürünün güncel fiyatı sonradan değişebilir. */
   readonly unitPrice: Money;
-  /** Satış anındaki birim maliyet — geçmiş kâr hesabı doğru kalsın diye satırda donar. */
-  readonly unitCost: Money;
 }
 
 export interface Order {
   readonly id: string;
   readonly date: IsoDate;
   readonly lines: readonly OrderLine[];
-  /** Satıcının üstlendiği kargo bedeli. */
-  readonly shippingCost: Money;
-  /** Pazaryeri komisyonu. */
-  readonly commission: Money;
-  /** Kupon/indirim tutarı. */
+  /** Kupon/indirim tutarı — pazaryeri bunu bildirir. */
   readonly discount: Money;
 }
 
