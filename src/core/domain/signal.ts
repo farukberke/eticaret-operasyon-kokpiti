@@ -125,6 +125,34 @@ export function actionKeyOf(signal: Signal): string {
   return `action.${signal.code}`;
 }
 
+/**
+ * Bağlı sermaye ölçen kodlar.
+ *
+ * `moneyAtStake` çoğu sinyalde bir **akış**tır: dönemde kaybedilen ya da
+ * kazanılan kâr. `DEAD_STOCK` ise bir **stok**tur: rafta duran sermaye.
+ * O para kaybolmadı, sıkıştı.
+ *
+ * Ayrım kâr defteri için zorunlu: ₺491.790'lık ölü stoğu "korunan kâr"
+ * saymak, tutarları abartma hatasını geri getirirdi.
+ */
+const CAPITAL_CODES: ReadonlySet<SignalCode> = new Set<SignalCode>(["DEAD_STOCK"]);
+
+export function isCapitalSignal(code: SignalCode): boolean {
+  return CAPITAL_CODES.has(code);
+}
+
+/**
+ * Sinyalin **kâr** cinsinden değeri. Bağlı sermaye sinyallerinde sıfırdır.
+ *
+ * Bir görev tamamlandığında deftere yazılacak tutar budur.
+ */
+export function profitGainOf(signal: Signal): Money {
+  if (isCapitalSignal(signal.code)) {
+    return { minor: 0, currency: signal.moneyAtStake.currency };
+  }
+  return signal.moneyAtStake;
+}
+
 export function isRisk(signal: Signal): boolean {
   return signal.kind === "risk";
 }

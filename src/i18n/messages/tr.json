@@ -242,5 +242,11 @@
     "emptySnoozedDescription": "Bir işi ertelediğinde burada görünür ve süresi dolunca kuyruğa döner.",
     "emptyDone": "Henüz tamamlanan iş yok",
     "emptyDoneDescription": "Kapattığın işler buraya düşer; gerekirse geri alabilirsin."
+  },
+  "ledger": {
+    "title": "Kapattığın işler",
+    "yesterday": "Dün korunan",
+    "thisMonth": "Bu ay korunan",
+    "taskCount": "{count} iş"
   }
 }

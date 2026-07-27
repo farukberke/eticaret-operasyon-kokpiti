@@ -1,4 +1,12 @@
-import type { Evidence, EvidenceValue, Money, Severity, Signal } from "@/core/domain";
+import {
+  isCapitalSignal,
+  profitGainOf,
+  type Evidence,
+  type EvidenceValue,
+  type Money,
+  type Severity,
+  type Signal,
+} from "@/core/domain";
 import type { BadgeTone } from "@/ui/primitives/badge";
 import type { SignalOutcome } from "@/ui/patterns/signal-card";
 import {
@@ -56,10 +64,14 @@ export interface SignalView {
   readonly severityLabel: string;
   readonly severityTone: BadgeTone;
   /**
-   * Kuruş cinsinden ham tutar. Günün özetindeki toplam istemcide
-   * hesaplandığı için (kullanıcı iş kapattıkça değişir) sayı da gerekir.
+   * Kuruş cinsinden **kâr** etkisi — bağlı sermaye sinyallerinde sıfır.
+   *
+   * İki yerde kullanılır ve ikisinde de aynı anlamı taşıması şart:
+   * günün özetindeki "yaparsan ₺X kâr korunur" toplamı ve görev
+   * tamamlandığında deftere dondurulan tutar. Ham `moneyAtStake` kullanmak,
+   * ölü stoğun bağlı sermayesini "korunan kâr" saymak olurdu.
    */
-  readonly moneyAtStakeMinor: number;
+  readonly profitGainMinor: number;
 }
 
 const SEVERITY_TONE: Record<Severity, BadgeTone> = {
@@ -114,23 +126,14 @@ function renderEvidence(item: Evidence, locale: string, t: SignalTranslators): s
   return t.evidence(item.code, values);
 }
 
-/**
- * Ölü stok diğerlerinden farklı bir para türü taşır.
- *
- * `DEAD_STOCK` dışındaki tüm sinyaller **akış** ölçer: dönemde kazanılan ya
- * da kaybedilen kâr. Ölü stok ise **duran** parayı ölçer: rafta bekleyen
- * sermaye. İkisine aynı cümleyi kurmak ("₺18.000 kaybediyorsun") yanlış olur;
- * o para kaybolmadı, sıkıştı.
- */
-const CAPITAL_SIGNALS = new Set(["DEAD_STOCK"]);
-
 function buildOutcome(
   signal: Signal,
   locale: string,
   t: SignalTranslators,
 ): SignalOutcome {
   const amount = formatMoney(signal.moneyAtStake, locale);
-  const isCapital = CAPITAL_SIGNALS.has(signal.code);
+  // Sınıflandırma çekirdekte: kâr defteri de aynı ayrımı kullanıyor.
+  const isCapital = isCapitalSignal(signal.code);
   const isOpportunity = signal.kind === "opportunity";
 
   const variant = isCapital ? "capital" : isOpportunity ? "gain" : "loss";
@@ -191,6 +194,6 @@ export function toSignalView(
     ...(deadline ? { deadline } : {}),
     severityLabel: t.severity(signal.severity),
     severityTone: SEVERITY_TONE[signal.severity],
-    moneyAtStakeMinor: signal.moneyAtStake.minor,
+    profitGainMinor: profitGainOf(signal).minor,
   };
 }

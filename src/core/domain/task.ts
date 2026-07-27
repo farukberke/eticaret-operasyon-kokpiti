@@ -1,4 +1,5 @@
 import type { IsoDate } from "./date-range";
+import type { Money } from "./money";
 
 /**
  * GÖREV YAŞAM DÖNGÜSÜ.
@@ -21,7 +22,25 @@ export interface TaskState {
    * Yalnızca `snoozed` durumunda anlamlıdır.
    */
   readonly snoozedUntil?: IsoDate | undefined;
+  /**
+   * Son değişiklik günü. `done` kayıtlarında **tamamlanma günüdür**: bir
+   * görev tamamlandıktan sonra başka bir geçiş olursa durumu da değişir,
+   * dolayısıyla ayrı bir `completedAt` alanı gereksiz tekrar olurdu.
+   */
   readonly updatedAt: IsoDate;
+  /**
+   * Görev tamamlandığı anda **dondurulan** kâr etkisi.
+   *
+   * Neden saklanıyor da her seferinde sinyalden okunmuyor: iş başarılı
+   * olduğunda sinyal ortadan kalkar. Kullanıcı "sipariş verdim" der, stok
+   * tazelenir, `STOCKOUT_IMMINENT` bir daha tetiklenmez. Tutarı sinyalden
+   * okuyan bir defter, tam da işe yarayan işleri ₺0 gösterirdi.
+   *
+   * Ayrıca sinyal tutarları her analizde son 30 günden yeniden hesaplandığı
+   * için geçmişe dönük olarak da kayardı. Defterin sabit kalması, ancak
+   * kararın verildiği andaki değerin saklanmasıyla mümkün.
+   */
+  readonly expectedGain?: Money | undefined;
 }
 
 /** Kullanıcının bir sinyal üzerinde yapabilecekleri. */

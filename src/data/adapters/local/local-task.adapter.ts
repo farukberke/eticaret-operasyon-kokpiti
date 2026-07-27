@@ -21,6 +21,10 @@ const STORAGE_KEY = "kokpit.tasks";
  * Alan adları ileride değişirse (ya da veritabanına taşınırken dışa aktarım
  * gerekirse) eski kaydı tanıyıp dönüştürebilmek için. Sürümsüz JSON yazmak,
  * ilk şema değişikliğinde kullanıcıların kuyruğunu sessizce silmek demektir.
+ *
+ * `expectedGain` sonradan eklendi ama sürüm **1'de kaldı**: alan opsiyonel
+ * ve eklemeli, eski kayıtlar sorunsuz okunuyor. Sürümü artırmak, hiçbir
+ * kazanç sağlamadan mevcut kullanıcıların kuyruğunu silerdi.
  */
 const SCHEMA_VERSION = 1;
 
@@ -33,6 +37,7 @@ interface StoredTask {
   readonly status: TaskStatus;
   readonly snoozedUntil?: string;
   readonly updatedAt: string;
+  readonly expectedGain?: { minor: number; currency: string };
 }
 
 /** Sunucu render'ında `window` yoktur; adapter sessizce boş döner. */
@@ -85,6 +90,9 @@ export const localTaskAdapter: TaskPort = {
       status: task.status,
       snoozedUntil: task.snoozedUntil,
       updatedAt: task.updatedAt,
+      expectedGain: task.expectedGain
+        ? { minor: task.expectedGain.minor, currency: "TRY" as const }
+        : undefined,
     }));
   },
 
@@ -98,6 +106,14 @@ export const localTaskAdapter: TaskPort = {
           status: state.status,
           ...(state.snoozedUntil ? { snoozedUntil: state.snoozedUntil } : {}),
           updatedAt: state.updatedAt,
+          ...(state.expectedGain
+            ? {
+                expectedGain: {
+                  minor: state.expectedGain.minor,
+                  currency: state.expectedGain.currency,
+                },
+              }
+            : {}),
         },
       },
     });

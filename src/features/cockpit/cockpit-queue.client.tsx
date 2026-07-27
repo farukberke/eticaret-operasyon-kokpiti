@@ -9,11 +9,12 @@ import {
   isDone,
   isSnoozedOn,
   matchesFilter,
+  type Currency,
   type IsoDate,
   type TaskFilter,
 } from "@/core/domain";
 import type { SignalView } from "@/features/signals/signal-view";
-import { useTaskState } from "@/features/tasks/use-task-state";
+import { useTasks } from "@/features/tasks/task-state-provider.client";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/cn";
 import { formatMoney, formatShortDate } from "@/lib/format";
@@ -52,14 +53,14 @@ export function CockpitQueue({
   views: readonly SignalView[];
   today: IsoDate;
   locale: string;
-  currency: string;
+  currency: Currency;
   /** Açık kuyrukta bir seferde gösterilecek iş sayısı. */
   limit: number;
 }) {
   const t = useTranslations("queue");
   const cockpit = useTranslations("cockpit");
 
-  const { states, complete, snooze, reopen } = useTaskState(today);
+  const { states, complete, snooze, reopen } = useTasks();
   const [filter, setFilter] = useState<TaskFilter>("open");
 
   const byFilter = useMemo(() => {
@@ -93,7 +94,7 @@ export function CockpitQueue({
       return { headline: cockpit("allClear"), stake: undefined, dueToday: undefined };
     }
 
-    const stakeMinor = queue.reduce((sum, view) => sum + view.moneyAtStakeMinor, 0);
+    const stakeMinor = queue.reduce((sum, view) => sum + view.profitGainMinor, 0);
     const urgent = queue.filter((view) => view.deadline?.urgent).length;
 
     return {
@@ -197,7 +198,12 @@ export function CockpitQueue({
                       <TaskActions
                         closed={closed}
                         doneLabel={view.doneLabel}
-                        onComplete={() => complete(view.id)}
+                        onComplete={() =>
+                          complete(view.id, {
+                            minor: view.profitGainMinor,
+                            currency,
+                          })
+                        }
                         onSnooze={(days) => snooze(view.id, days)}
                         onReopen={() => reopen(view.id)}
                       />

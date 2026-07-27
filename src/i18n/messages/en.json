@@ -242,5 +242,11 @@
     "emptySnoozedDescription": "Snoozed work shows up here and returns to the queue when the time is up.",
     "emptyDone": "Nothing completed yet",
     "emptyDoneDescription": "Work you close lands here; you can undo it if needed."
+  },
+  "ledger": {
+    "title": "Work you closed",
+    "yesterday": "Protected yesterday",
+    "thisMonth": "Protected this month",
+    "taskCount": "{count} tasks"
   }
 }

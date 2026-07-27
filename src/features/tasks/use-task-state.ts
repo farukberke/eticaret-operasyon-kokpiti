@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { addDays, type IsoDate, type TaskState } from "@/core/domain";
+import { addDays, type IsoDate, type Money, type TaskState } from "@/core/domain";
 import { taskContainer } from "@/data/task-container";
 
 /**
@@ -27,7 +27,14 @@ export interface TaskStateApi {
   readonly states: ReadonlyMap<string, TaskState>;
   /** İlk okuma tamamlandı mı — kısa süreli boş durumu ayırt etmek için. */
   readonly loaded: boolean;
-  complete: (signalId: string) => void;
+  /**
+   * İşi kapatır ve kâr etkisini **o anki değeriyle dondurur**.
+   *
+   * Tutarın burada alınması zorunlu: iş başarılı olduğunda sinyal ortadan
+   * kalkar (stok tazelenir, uyarı susar) ve sonradan bakılacak bir yer
+   * kalmaz. Bkz. `TaskState.expectedGain`.
+   */
+  complete: (signalId: string, expectedGain: Money) => void;
   snooze: (signalId: string, days: number) => void;
   reopen: (signalId: string) => void;
 }
@@ -57,8 +64,8 @@ export function useTaskState(today: IsoDate): TaskStateApi {
   }, []);
 
   const complete = useCallback(
-    (signalId: string) => {
-      apply({ signalId, status: "done", updatedAt: today });
+    (signalId: string, expectedGain: Money) => {
+      apply({ signalId, status: "done", updatedAt: today, expectedGain });
     },
     [apply, today],
   );
