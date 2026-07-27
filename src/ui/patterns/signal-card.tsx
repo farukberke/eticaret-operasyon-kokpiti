@@ -49,6 +49,21 @@ export interface SignalCardProps {
   readonly deadline?: { readonly label: string; readonly urgent: boolean } | undefined;
   readonly severityLabel: string;
   readonly severityTone: BadgeTone;
+  /**
+   * Aksiyon düğmeleri ("Sipariş verdim", "Ertele"…).
+   *
+   * `ReactNode` olarak alınıyor çünkü `ui` katmanı görev yaşam döngüsünü
+   * bilmez — hangi düğmelerin görüneceği, ne yapacakları ve nasıl
+   * adlandırılacakları `features` katmanının kararıdır.
+   */
+  readonly actions?: React.ReactNode;
+  /**
+   * Tamamlanmış ya da ertelenmiş kayıtlar için sönük görünüm. Kuyruktan
+   * çıkmış bir iş, açık işlerle aynı görsel ağırlıkta durmamalı.
+   */
+  readonly dimmed?: boolean;
+  /** Durum notu: "3 Ağustos'a kadar ertelendi". */
+  readonly note?: string | undefined;
   readonly className?: string;
 }
 
@@ -61,10 +76,15 @@ export function SignalCard({
   deadline,
   severityLabel,
   severityTone,
+  actions,
+  dimmed = false,
+  note,
   className,
 }: SignalCardProps) {
   return (
-    <article className={cn("flex items-start gap-3 py-4", className)}>
+    <article
+      className={cn("flex items-start gap-3 py-4", dimmed && "opacity-60", className)}
+    >
       {rank !== undefined && (
         <span
           className="bg-surface-muted text-fg-muted tabular mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
@@ -139,6 +159,13 @@ export function SignalCard({
             )}
           </div>
         </dl>
+
+        {note && <p className="text-fg-muted mt-2 text-xs">{note}</p>}
+
+        {/* 5 — KARAR. Kuyruğu listeden operasyona çeviren satır. */}
+        {actions && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">{actions}</div>
+        )}
       </div>
     </article>
   );

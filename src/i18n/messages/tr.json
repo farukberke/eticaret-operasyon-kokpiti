@@ -213,5 +213,34 @@
       "do": "{amount} serbest kalır",
       "skip": "{amount} bağlı kalır"
     }
+  },
+  "done": {
+    "STOCKOUT_IMMINENT": "Sipariş verdim",
+    "DEAD_STOCK": "İndirime aldım",
+    "MARGIN_EROSION": "Fiyatı güncelledim",
+    "HIGH_RETURN_RATE": "İlanı düzelttim",
+    "SELLING_AT_LOSS": "Fiyatı düzelttim",
+    "AD_SPEND_LEAK": "Kampanyayı durdurdum",
+    "REVENUE_DROP": "İnceledim",
+    "TRENDING_UP": "Stok ve bütçe ayarladım",
+    "RESTOCK_WINNER": "Sipariş verdim",
+    "PRICE_TEST_CANDIDATE": "Testi başlattım",
+    "HIGH_MARGIN_LOW_ADSPEND": "Bütçe ayırdım",
+    "BUNDLE_CANDIDATE": "Paketi oluşturdum"
+  },
+  "queue": {
+    "filterOpen": "Açık",
+    "filterSnoozed": "Ertelenen",
+    "filterDone": "Tamamlanan",
+    "snooze": "Ertele",
+    "snoozeDays": "{days} gün",
+    "snoozeCancel": "Vazgeç",
+    "undo": "Geri al",
+    "snoozedUntil": "{date} tarihine kadar ertelendi",
+    "doneNote": "Tamamlandı",
+    "emptySnoozed": "Ertelenmiş iş yok",
+    "emptySnoozedDescription": "Bir işi ertelediğinde burada görünür ve süresi dolunca kuyruğa döner.",
+    "emptyDone": "Henüz tamamlanan iş yok",
+    "emptyDoneDescription": "Kapattığın işler buraya düşer; gerekirse geri alabilirsin."
   }
 }

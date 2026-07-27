@@ -11,3 +11,4 @@ export * from "./order";
 export * from "./priority";
 export * from "./product";
 export * from "./signal";
+export * from "./task";

@@ -213,5 +213,34 @@
       "do": "{amount} freed up",
       "skip": "{amount} stays tied up"
     }
+  },
+  "done": {
+    "STOCKOUT_IMMINENT": "Ordered",
+    "DEAD_STOCK": "Discounted it",
+    "MARGIN_EROSION": "Updated the price",
+    "HIGH_RETURN_RATE": "Fixed the listing",
+    "SELLING_AT_LOSS": "Fixed the price",
+    "AD_SPEND_LEAK": "Paused the campaign",
+    "REVENUE_DROP": "Looked into it",
+    "TRENDING_UP": "Adjusted stock and budget",
+    "RESTOCK_WINNER": "Ordered",
+    "PRICE_TEST_CANDIDATE": "Started the test",
+    "HIGH_MARGIN_LOW_ADSPEND": "Allocated budget",
+    "BUNDLE_CANDIDATE": "Created the bundle"
+  },
+  "queue": {
+    "filterOpen": "Open",
+    "filterSnoozed": "Snoozed",
+    "filterDone": "Done",
+    "snooze": "Snooze",
+    "snoozeDays": "{days} days",
+    "snoozeCancel": "Cancel",
+    "undo": "Undo",
+    "snoozedUntil": "Snoozed until {date}",
+    "doneNote": "Completed",
+    "emptySnoozed": "Nothing snoozed",
+    "emptySnoozedDescription": "Snoozed work shows up here and returns to the queue when the time is up.",
+    "emptyDone": "Nothing completed yet",
+    "emptyDoneDescription": "Work you close lands here; you can undo it if needed."
   }
 }

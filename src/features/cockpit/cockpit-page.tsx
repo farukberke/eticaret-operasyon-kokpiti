@@ -3,14 +3,13 @@ import { getTranslations } from "next-intl/server";
 
 import { container, defaultRange } from "@/data/container";
 import { Link } from "@/i18n/navigation";
-import type { Locale } from "@/i18n/routing";
-import { SignalList } from "@/features/signals/signal-list";
+import { CURRENCY, type Locale } from "@/i18n/routing";
+import { buildSignalViews } from "@/features/signals/build-views";
 import { SignalSummary } from "@/features/signals/signal-summary";
-import { Card } from "@/ui/primitives/card";
 import { SectionCard } from "@/ui/patterns/section-card";
 
+import { CockpitQueue } from "./cockpit-queue.client";
 import { ContextStrip } from "./context-strip";
-import { DayBrief } from "./day-brief";
 
 /**
  * KOKPİT — "sabah aç, 30 saniyede ne yapacağını anla".
@@ -72,34 +71,31 @@ export async function CockpitPage({ locale }: { locale: Locale }) {
     getTranslations("common"),
   ]);
 
-  const queue = priorities.slice(0, COCKPIT_QUEUE_LIMIT);
+  /**
+   * Görünüm modelleri sunucuda hazırlanır: çeviri ve para biçimlendirmesi
+   * burada biter, istemciye yalnızca düz metin iner.
+   *
+   * Kuyruğa **tüm** öncelikler verilir, ilk üçü değil — kullanıcı üstteki
+   * işleri kapattıkça alttakiler yükselmeli ve "Tamamlanan" sekmesi ilk üçün
+   * dışındakileri de gösterebilmeli.
+   */
+  const views = await buildSignalViews(
+    priorities.map((action) => action.signal),
+    locale,
+  );
 
   return (
     <div className="flex flex-col gap-5">
-      {/* 1 — GÜNÜN CÜMLESİ */}
-      <DayBrief priorities={queue} locale={locale} />
-
-      {/* 2 — KUYRUK */}
-      <Card className="px-4">
-        <SignalList
-          signals={queue.map((action) => action.signal)}
-          locale={locale}
-          ranked
-          empty={{
-            title: t("allClear"),
-            description: t("allClearDescription"),
-          }}
-        />
-      </Card>
-
-      {priorities.length > queue.length && (
-        <div className="-mt-3">
-          <DetailLink
-            href="/priorities"
-            label={t("remaining", { count: priorities.length - queue.length })}
-          />
-        </div>
-      )}
+      {/* 1–2 — GÜNÜN CÜMLESİ + KUYRUK
+          Tek istemci bileşeni: iş kapatıldığında hem liste hem üstteki
+          cümle aynı anda güncellenmeli. */}
+      <CockpitQueue
+        views={views}
+        today={container.clock.today()}
+        locale={locale}
+        currency={CURRENCY}
+        limit={COCKPIT_QUEUE_LIMIT}
+      />
 
       {/* 3 — BAĞLAM */}
       <ContextStrip sales={sales} profit={profit} locale={locale} />

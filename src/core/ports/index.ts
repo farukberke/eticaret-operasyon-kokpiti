@@ -3,6 +3,7 @@ import type { ProfitSummary, SalesSummary } from "../domain/metrics";
 import type { PriorityAction } from "../domain/priority";
 import type { ProductPerformance } from "../domain/product";
 import type { Signal } from "../domain/signal";
+import type { TaskState } from "../domain/task";
 
 /**
  * PORTLAR — veri kaynağıyla aramızdaki sözleşme.
@@ -53,4 +54,25 @@ export interface PriorityPort {
  */
 export interface ClockPort {
   today(): IsoDate;
+}
+
+/**
+ * Görev durumlarının kalıcılığı.
+ *
+ * v1'de `localStorage` uygular — kullanıcı hesabı olmadığı için durumun
+ * sunucuda tutulacağı bir yer de yok. Sözleşme buna rağmen **veritabanı
+ * şeklinde** tasarlandı (async, kimlik bazlı yazma): oturum sistemi
+ * geldiğinde `PostgresTaskAdapter` yazmak, aynı üç metodu doldurmaktan
+ * ibaret olacak. Kuyruk bileşeni değişmeyecek.
+ *
+ * Bilinçli olarak `updateMany` ya da toplu işlem yok; her karar tek bir
+ * sinyal hakkındadır ve tek satır yazar.
+ */
+export interface TaskPort {
+  /** Kayıtlı tüm görev durumları. */
+  list(): Promise<readonly TaskState[]>;
+  /** Bir görevin durumunu yazar; varsa üzerine geçer. */
+  save(state: TaskState): Promise<void>;
+  /** Görevi kuyruğa geri döndürür (kaydı siler). */
+  clear(signalId: string): Promise<void>;
 }

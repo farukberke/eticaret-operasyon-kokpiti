@@ -29,6 +29,7 @@ export type Translate = (
 export interface SignalTranslators {
   readonly signal: Translate;
   readonly action: Translate;
+  readonly done: Translate;
   readonly evidence: Translate;
   readonly severity: Translate;
   readonly outcome: Translate;
@@ -36,16 +37,29 @@ export interface SignalTranslators {
   readonly common: Translate;
 }
 
+/**
+ * Ekranın ihtiyacı olan her şey — **tamamen serileştirilebilir**.
+ *
+ * Sunucu bileşeni bunu hazırlar, istemci kuyruğu tüketir. İçinde fonksiyon
+ * ya da domain nesnesi yok; sunucu→istemci sınırını sorunsuz geçer.
+ */
 export interface SignalView {
   readonly id: string;
   readonly rank?: number;
   readonly title: string;
   readonly evidence: string[];
   readonly action: string;
+  /** "Sipariş verdim" — aksiyonu onaylayan düğme metni. */
+  readonly doneLabel: string;
   readonly outcome: SignalOutcome;
   readonly deadline?: { label: string; urgent: boolean };
   readonly severityLabel: string;
   readonly severityTone: BadgeTone;
+  /**
+   * Kuruş cinsinden ham tutar. Günün özetindeki toplam istemcide
+   * hesaplandığı için (kullanıcı iş kapattıkça değişir) sayı da gerekir.
+   */
+  readonly moneyAtStakeMinor: number;
 }
 
 const SEVERITY_TONE: Record<Severity, BadgeTone> = {
@@ -172,9 +186,11 @@ export function toSignalView(
     title: t.signal(signal.code, { subject }),
     evidence: signal.evidence.map((item) => renderEvidence(item, locale, t)),
     action: t.action(signal.code),
+    doneLabel: t.done(signal.code),
     outcome: buildOutcome(signal, locale, t),
     ...(deadline ? { deadline } : {}),
     severityLabel: t.severity(signal.severity),
     severityTone: SEVERITY_TONE[signal.severity],
+    moneyAtStakeMinor: signal.moneyAtStake.minor,
   };
 }
