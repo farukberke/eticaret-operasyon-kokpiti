@@ -8,7 +8,9 @@ import type { Locale } from "@/i18n/routing";
 import { Card } from "@/ui/primitives/card";
 import { PageHeader } from "@/ui/patterns/page-header";
 
+import { CostImport } from "./cost-import.client";
 import { CostList, type CostListRow } from "./cost-list.client";
+import { templateCsv } from "./import-actions";
 
 /**
  * MALİYETLER — pazaryerinin bilmediği verinin girildiği yer.
@@ -19,9 +21,10 @@ import { CostList, type CostListRow } from "./cost-list.client";
  */
 export async function CostsPage({ locale }: { locale: Locale }) {
   const range = defaultRange();
-  const [performance, profit, t] = await Promise.all([
+  const [performance, profit, template, t] = await Promise.all([
     container.products.getPerformance(range),
     container.profit.getSummary(range),
+    templateCsv(),
     getTranslations("costs"),
   ]);
 
@@ -84,12 +87,9 @@ export async function CostsPage({ locale }: { locale: Locale }) {
           <p className="text-success text-sm font-medium">{t("allComplete")}</p>
         )}
 
-        <CostList rows={rows} today={today} />
+        <CostImport template={template} />
 
-        <Card className="text-fg-muted p-3 text-xs">
-          <p className="text-fg mb-1 text-sm font-medium">{t("importTitle")}</p>
-          <p>{t("importSoon")}</p>
-        </Card>
+        <CostList rows={rows} today={today} />
       </div>
     </>
   );

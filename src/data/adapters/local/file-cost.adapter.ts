@@ -82,6 +82,24 @@ export const fileCostAdapter: CostPort = {
     await write({ ...shape, products: [...products, cost] });
   },
 
+  /**
+   * Toplu upsert — tek okuma, tek yazma.
+   *
+   * Aynı anahtar gelen kayıtta **son** satır kazanır; ama içe aktarma servisi
+   * dosyada aynı anahtarı iki kez gördüğünde zaten her iki satırı da
+   * reddettiği için buraya çakışan çift ulaşmaz. Yine de burada deterministik
+   * davranmak, portu başka bir çağrının yanlış kullanmasına karşı korur.
+   */
+  async saveProductCosts(costs: readonly ProductCost[]): Promise<void> {
+    if (costs.length === 0) return;
+
+    const shape = await read();
+    const incoming = new Map(costs.map((cost) => [costKeyOf(cost), cost] as const));
+    const kept = shape.products.filter((entry) => !incoming.has(costKeyOf(entry)));
+
+    await write({ ...shape, products: [...kept, ...incoming.values()] });
+  },
+
   async removeProductCost(productId: string, effectiveFrom: IsoDate): Promise<void> {
     const shape = await read();
     const key = costKeyOf({ productId, effectiveFrom });

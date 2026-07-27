@@ -71,6 +71,15 @@ export interface ClockPort {
 export interface CostPort {
   load(): Promise<CostTable>;
   saveProductCost(cost: ProductCost): Promise<void>;
+  /**
+   * Toplu yazma — içe aktarmanın tek çağrısı.
+   *
+   * Tek tek `saveProductCost` çağırmak dosya adapter'ında her satır için
+   * oku-yaz demek olurdu (500 satır = 1000 dosya işlemi) ve yarıda kalan bir
+   * içe aktarma dosyayı yarım bırakırdı. Sözleşme **hep ya da hiç**:
+   * kayıtların tamamı tek seferde yazılır.
+   */
+  saveProductCosts(costs: readonly ProductCost[]): Promise<void>;
   removeProductCost(productId: string, effectiveFrom: IsoDate): Promise<void>;
   saveDefault(entry: CostDefault): Promise<void>;
 }

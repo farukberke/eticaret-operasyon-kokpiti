@@ -9,6 +9,7 @@ import type {
 } from "@/core/ports";
 
 import {
+  loadCostSource,
   mockClock,
   mockPriorityPort,
   mockProductPort,
@@ -16,6 +17,13 @@ import {
   mockSalesPort,
   mockSignalPort,
 } from "./adapters/mock/mock.adapters";
+
+/**
+ * Toplu maliyet içe aktarmanın kaynak verisi (katalog + yürürlükteki
+ * kayıtlar). Port değil çünkü bir *sorgu* değil, adapter'ın kendi verisine
+ * bakış — gerçek entegrasyonda da aynı yerden gelecek.
+ */
+export { loadCostSource };
 
 /**
  * BAĞIMLILIK KONTEYNERİ — mimarinin tek anahtarı.

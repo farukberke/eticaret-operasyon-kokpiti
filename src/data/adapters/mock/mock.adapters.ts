@@ -2,8 +2,10 @@ import { cache } from "react";
 
 import {
   todayIn,
+  type CostTable,
   type DateRange,
   type IsoDate,
+  type Product,
   type StoreDataset,
 } from "@/core/domain";
 import type {
@@ -66,6 +68,24 @@ async function datasetFor(today: IsoDate): Promise<StoreDataset> {
   const base = buildDataset(today);
   const saved = await costContainer.costs.load();
   return { ...base, costs: mergeCostTables(base.costs, saved) };
+}
+
+/**
+ * Toplu içe aktarmanın ihtiyaç duyduğu iki şey: katalog ve **yürürlükteki**
+ * maliyet kayıtları.
+ *
+ * Yürürlükteki, çünkü önizlemenin "mevcut değer" sütunu kullanıcının
+ * kaydettiklerini de tohumlanan başlangıç verisini de içermeli — kâr hesabı
+ * hangi tabloyu görüyorsa karşılaştırma da onu görmeli. Yalnızca kullanıcı
+ * kayıtlarına bakmak, tohumlu bir maliyeti aynı değerle içe aktaran satırı
+ * "değişecek" diye göstermek olurdu.
+ */
+export async function loadCostSource(): Promise<{
+  readonly products: readonly Product[];
+  readonly costs: CostTable;
+}> {
+  const dataset = await datasetFor(mockClock.today());
+  return { products: dataset.products, costs: dataset.costs };
 }
 
 /**
