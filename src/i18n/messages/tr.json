@@ -32,19 +32,20 @@
     "todayIs": "{date}",
     "prioritiesTitle": "Bugün ne yapmalısın",
     "prioritiesDescription": "Aciliyet ve para etkisine göre sıralandı",
-    "trendTitle": "Ciro ve kâr",
     "risksTitle": "Riskler",
     "risksDescription": "Türe göre, toplam para etkisiyle",
     "opportunitiesTitle": "Fırsatlar",
     "opportunitiesDescription": "Türe göre, toplam kazanç potansiyeliyle",
-    "productsTitle": "Ürün performansı",
-    "productsDescription": "En iyi ve en zayıf üçer ürün",
     "allClear": "Bugün acil bir iş yok",
     "allClearDescription": "Tüm ürünler sağlıklı görünüyor. İyi bir gün.",
     "noRisks": "Risk yok",
     "noRisksDescription": "Stok, marj ve iade oranları normal aralıkta.",
     "noOpportunities": "Bekleyen fırsat yok",
-    "noOpportunitiesDescription": "Yeni bir trend ya da fiyat fırsatı görünmüyor."
+    "noOpportunitiesDescription": "Yeni bir trend ya da fiyat fırsatı görünmüyor.",
+    "briefCount": "Bugün {count} işin var.",
+    "briefStake": "Yaparsan {amount} kâr korunur.",
+    "briefDueToday": "{count} tanesi bugün karar istiyor.",
+    "remaining": "Bekleyen {count} iş"
   },
   "kpi": {
     "revenue": "Ciro",
@@ -59,10 +60,6 @@
     "high": "Yüksek",
     "medium": "Orta",
     "low": "Düşük"
-  },
-  "amountCaption": {
-    "risk": "risk altında",
-    "opportunity": "fırsat"
   },
   "subject": {
     "store": "Mağaza geneli"
@@ -117,12 +114,14 @@
     "returnRate": "iade oranı {rate} · {sold} satıştan {returned} iade",
     "lossPerPeriod": "{units} satışta {loss} zarar",
     "roasBelowOne": "ROAS {roas} · {spend} harcama, {revenue} ciro",
-    "revenueChange": "{change} değişim · {previous} → {current}",
     "velocityGrowth": "{growth} artış · günde {before} → {now} adet",
     "winnerRunningLow": "marj {margin} · günde {perDay} adet · {days} gün yeter",
     "highMargin": "marj {margin}",
     "unsupportedWinner": "marj {margin} · reklam payı {spendShare} · {profit} kâr",
-    "boughtTogether": "{count} siparişte {partner} ile birlikte alındı"
+    "boughtTogether": "{count} siparişte {partner} ile birlikte alındı",
+    "leadTimeGap": "tedarik {leadDays} gün · {gapDays} gün stoksuz kalırsın",
+    "excessReturns": "eşik %{threshold} · {excess} adet fazla iade",
+    "profitChange": "{change} değişim · {previous} → {current}"
   },
   "products": {
     "title": "Ürün performansı",
@@ -195,5 +194,24 @@
     "down": "azaldı",
     "flat": "değişmedi",
     "srDelta": "önceki döneme göre {value} {direction}"
+  },
+  "outcome": {
+    "doLabel": "Yaparsan",
+    "skipLabel": "Yapmazsan",
+    "perDay": "her gecikme günü {amount}",
+    "deadlineToday": "Son karar: bugün",
+    "deadlineOn": "Son karar: {date}",
+    "loss": {
+      "do": "{amount} korunur",
+      "skip": "{amount} erir"
+    },
+    "gain": {
+      "do": "{amount} kazanılır",
+      "skip": "{amount} kaçar"
+    },
+    "capital": {
+      "do": "{amount} serbest kalır",
+      "skip": "{amount} bağlı kalır"
+    }
   }
 }

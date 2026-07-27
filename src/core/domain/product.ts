@@ -42,6 +42,14 @@ export interface ProductPerformance {
 
   /** Tüm gider kalemleri düşülmüş net kâr. */
   readonly netProfit: Money;
+  /**
+   * Birim başına net kâr: `netProfit / (satılan − iade)`.
+   *
+   * Kaçan satışın maliyetini hesaplamanın tek dürüst yolu. Fiyatla çarpmak
+   * ciroyu verir ve kaybı kat kat abartır — satıcı o ürünü satsa fiyatın
+   * tamamını değil, yalnızca bunu kazanacaktı.
+   */
+  readonly unitProfit: Money;
 
   /** netProfit / netRevenue. Ciro sıfırsa `null`. */
   readonly marginRatio: number | null;

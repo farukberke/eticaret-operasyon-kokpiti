@@ -1,9 +1,13 @@
 import { isWithin } from "../domain/date-range";
-import { addMoney, multiplyMoney, type Money } from "../domain/money";
+import { addMoney, multiplyMoney } from "../domain/money";
 import type { ProductPerformance } from "../domain/product";
 import type { Evidence, Signal, SignalSubject } from "../domain/signal";
 
-import { createSignal, type AnalysisContext } from "./analysis-context";
+import {
+  createSignal,
+  orderDeadlineOf,
+  type AnalysisContext,
+} from "./analysis-context";
 import { velocityChangeOf } from "./inventory-analyzer";
 
 /**
@@ -35,16 +39,12 @@ const evidence = (code: string, values: Evidence["values"]): Evidence => ({
   values,
 });
 
-/** Birim başına net kâr — fırsat büyüklüğünü tahmin ederken kullanılır. */
-function unitProfitOf(performance: ProductPerformance): Money {
-  const netUnits = performance.unitsSold - performance.unitsReturned;
-  if (netUnits <= 0) return { minor: 0, currency: performance.netProfit.currency };
-  return multiplyMoney(performance.netProfit, 1 / netUnits);
-}
-
 /**
  * 1) Yükselen trend.
  * Satış hızı önceki döneme göre belirgin arttı — stok ve reklam kararı gerektirir.
+ *
+ * Kazanç, ek adetlerin **kârı** üzerinden hesaplanır; fiyatla çarpmak ciroyu
+ * verir ve fırsatı olduğundan 4–5 kat büyük gösterirdi.
  */
 const trendingUp: ProductRule = (performance, context) => {
   const { trendingUpRatio, trendingMinUnits } = context.rules.opportunity;
@@ -58,8 +58,8 @@ const trendingUp: ProductRule = (performance, context) => {
   const extraUnitsPerDay =
     performance.dailyVelocity - performance.previousDailyVelocity;
   const upside = multiplyMoney(
-    performance.product.price,
-    extraUnitsPerDay * context.rules.risk.stockoutHorizonDays,
+    performance.unitProfit,
+    extraUnitsPerDay * context.rules.inventory.forecastHorizonDays,
   );
 
   return createSignal({
@@ -67,6 +67,7 @@ const trendingUp: ProductRule = (performance, context) => {
     code: "TRENDING_UP",
     subject: subjectOf(performance),
     moneyAtStake: upside,
+    dailyImpact: multiplyMoney(performance.unitProfit, extraUnitsPerDay),
     // Trend soğumadan hareket etmek gerekir.
     urgency: 6,
     evidence: [
@@ -90,7 +91,8 @@ const trendingUp: ProductRule = (performance, context) => {
  */
 const restockWinner: ProductRule = (performance, context) => {
   const { winnerMarginRatio, restockDaysOfCover } = context.rules.opportunity;
-  const { stockoutDaysOfCover, stockoutHorizonDays } = context.rules.risk;
+  const { stockoutDaysOfCover } = context.rules.risk;
+  const { supplyLeadTimeDays } = context.rules.inventory;
 
   const cover = performance.daysOfCover;
   const margin = performance.marginRatio;
@@ -99,10 +101,18 @@ const restockWinner: ProductRule = (performance, context) => {
   if (margin < winnerMarginRatio) return null;
   if (cover < stockoutDaysOfCover || cover >= restockDaysOfCover) return null;
 
-  const daysWithoutStock = Math.max(0, stockoutHorizonDays - cover);
+  /**
+   * Bu üründe stok HENÜZ bitmedi — kural zaten kritik eşiğin üstünde
+   * tetikleniyor. Dolayısıyla "şu an kaç gün açıktasın" diye sormak anlamsız;
+   * doğru soru "hiçbir şey yapmazsam ne olur".
+   *
+   * Cevap: stok `cover` gün sonra biter, sipariş o gün verilse mal `tedarik
+   * süresi` kadar sonra gelir. Yani tam bir tedarik süresi boyunca satış
+   * yapılamaz. Şimdi sipariş vermenin değeri budur.
+   */
   const upside = multiplyMoney(
-    unitProfitOf(performance),
-    performance.dailyVelocity * daysWithoutStock,
+    performance.unitProfit,
+    performance.dailyVelocity * supplyLeadTimeDays,
   );
 
   return createSignal({
@@ -110,6 +120,8 @@ const restockWinner: ProductRule = (performance, context) => {
     code: "RESTOCK_WINNER",
     subject: subjectOf(performance),
     moneyAtStake: upside,
+    dailyImpact: multiplyMoney(performance.unitProfit, performance.dailyVelocity),
+    deadline: orderDeadlineOf(cover, context),
     urgency: 6,
     evidence: [
       evidence("winnerRunningLow", {
@@ -227,8 +239,10 @@ function bundleCandidates(context: AnalysisContext): Signal[] {
         const second = secondId ? performanceById.get(secondId) : undefined;
         if (!first || !second) return [];
 
+        // Paketin değeri, birlikte satılan adetlerin **kârı**. Fiyat toplamı
+        // ciroyu verir ve öneriyi olduğundan kat kat büyük gösterirdi.
         const pairValue = multiplyMoney(
-          addMoney(first.product.price, second.product.price),
+          addMoney(first.unitProfit, second.unitProfit),
           count,
         );
 

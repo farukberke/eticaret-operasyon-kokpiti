@@ -1,6 +1,12 @@
 import type { StoreDataset } from "../domain/dataset";
-import { previousPeriod, type DateRange, type IsoDate } from "../domain/date-range";
-import type { Money } from "../domain/money";
+import {
+  addDays,
+  daysInRange,
+  previousPeriod,
+  type DateRange,
+  type IsoDate,
+} from "../domain/date-range";
+import { multiplyMoney, type Money } from "../domain/money";
 import type { ProductPerformance } from "../domain/product";
 import type {
   Evidence,
@@ -12,7 +18,7 @@ import type {
 } from "../domain/signal";
 
 import { buildProductPerformance } from "./inventory-analyzer";
-import { aggregateStore, netRevenueOf } from "./profit-calculator";
+import { aggregateStore, netProfitOf, netRevenueOf } from "./profit-calculator";
 import { DEFAULT_RULES, type RulesConfig } from "./rules.config";
 
 /**
@@ -28,8 +34,11 @@ export interface AnalysisContext {
   readonly today: IsoDate;
   readonly rules: RulesConfig;
   readonly performance: readonly ProductPerformance[];
+  /** Dönemdeki gün sayısı — günlük etki hesaplarında paydadır. */
+  readonly dayCount: number;
   readonly storeNetRevenue: Money;
-  readonly previousStoreNetRevenue: Money;
+  readonly storeNetProfit: Money;
+  readonly previousStoreNetProfit: Money;
 }
 
 export function createAnalysisContext(params: {
@@ -39,6 +48,8 @@ export function createAnalysisContext(params: {
   rules?: RulesConfig;
 }): AnalysisContext {
   const rules = params.rules ?? DEFAULT_RULES;
+  const current = aggregateStore(params.dataset, params.range);
+  const previous = aggregateStore(params.dataset, previousPeriod(params.range));
 
   return {
     dataset: params.dataset,
@@ -46,10 +57,10 @@ export function createAnalysisContext(params: {
     today: params.today,
     rules,
     performance: buildProductPerformance(params.dataset, params.range),
-    storeNetRevenue: netRevenueOf(aggregateStore(params.dataset, params.range)),
-    previousStoreNetRevenue: netRevenueOf(
-      aggregateStore(params.dataset, previousPeriod(params.range)),
-    ),
+    dayCount: daysInRange(params.range),
+    storeNetRevenue: netRevenueOf(current),
+    storeNetProfit: netProfitOf(current),
+    previousStoreNetProfit: netProfitOf(previous),
   };
 }
 
@@ -96,6 +107,10 @@ export function createSignal(params: {
   urgency: number;
   evidence: readonly Evidence[];
   context: AnalysisContext;
+  /** Gecikilen her günün maliyeti. Aciliyeti hissettiren türev. */
+  dailyImpact?: Money;
+  /** Kararın en geç verilmesi gereken gün. */
+  deadline?: IsoDate;
   /**
    * Aynı kod + aynı konu için birden fazla sinyal üretilebilen durumlarda
    * (ör. bir ürünün iki farklı paket adayı) kimliği ayrıştırır.
@@ -115,6 +130,8 @@ export function createSignal(params: {
     severity: severityOf(urgency),
     subject: params.subject,
     moneyAtStake: params.moneyAtStake,
+    dailyImpact: params.dailyImpact,
+    deadline: params.deadline,
     urgency,
     impact: impactOf(
       params.moneyAtStake,
@@ -123,4 +140,25 @@ export function createSignal(params: {
     evidence: params.evidence,
     detectedAt: params.context.today,
   };
+}
+
+/**
+ * Stok kararının son günü.
+ *
+ * `stok yeterlilik günü − tedarik süresi` kadar gün sonra sipariş verilmelidir.
+ * Sonuç negatifse karar zaten gecikmiştir ve bugüne sabitlenir — geçmişe
+ * tarih basmak kullanıcıya yardımcı olmaz, "bugün" der ve geçer.
+ */
+export function orderDeadlineOf(
+  daysOfCover: number,
+  context: AnalysisContext,
+): IsoDate {
+  const slack = daysOfCover - context.rules.inventory.supplyLeadTimeDays;
+  return addDays(context.today, Math.max(0, Math.floor(slack)));
+}
+
+/** Dönem toplamını günlük orana çevirir. */
+export function perDayOf(total: Money, context: AnalysisContext): Money {
+  if (context.dayCount <= 0) return total;
+  return multiplyMoney(total, 1 / context.dayCount);
 }

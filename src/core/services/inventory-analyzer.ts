@@ -1,6 +1,6 @@
 import type { StoreDataset } from "../domain/dataset";
 import { daysInRange, previousPeriod, type DateRange } from "../domain/date-range";
-import { ZERO_MONEY, moneyRatio, type Money } from "../domain/money";
+import { ZERO_MONEY, moneyRatio, multiplyMoney, type Money } from "../domain/money";
 import type { ProductPerformance } from "../domain/product";
 
 import {
@@ -91,6 +91,7 @@ export function buildProductPerformance(
       adSpend: aggregate.adSpend,
 
       netProfit,
+      unitProfit: netUnits > 0 ? multiplyMoney(netProfit, 1 / netUnits) : ZERO_MONEY,
       marginRatio: moneyRatio(netProfit, netRevenue),
       returnRate:
         aggregate.unitsSold > 0 ? aggregate.unitsReturned / aggregate.unitsSold : null,

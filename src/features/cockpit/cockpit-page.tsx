@@ -1,31 +1,37 @@
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
-import { container, DEFAULT_ANALYSIS_DAYS, defaultRange } from "@/data/container";
+import { container, defaultRange } from "@/data/container";
 import { Link } from "@/i18n/navigation";
-import { CURRENCY, type Locale } from "@/i18n/routing";
+import type { Locale } from "@/i18n/routing";
 import { SignalList } from "@/features/signals/signal-list";
 import { SignalSummary } from "@/features/signals/signal-summary";
-import { ProductTable } from "@/features/products/product-table";
-import { EmptyState } from "@/ui/patterns/empty-state";
+import { Card } from "@/ui/primitives/card";
 import { SectionCard } from "@/ui/patterns/section-card";
-import { TrendChart } from "@/ui/charts/trend-chart";
 
-import { KpiRow } from "./kpi-row";
+import { ContextStrip } from "./context-strip";
+import { DayBrief } from "./day-brief";
 
 /**
  * KOKPİT — "sabah aç, 30 saniyede ne yapacağını anla".
  *
- * Bilgi hiyerarşisi bilinçlidir ve yukarıdan aşağıya şöyle okunur:
+ * Ekran bir rapor değil, bir **vardiya devri**. Yukarıdan aşağıya:
  *
- *   1. BUGÜN NE YAPMALISIN   → karar (ilk 3 öncelik, gerekçeleriyle)
- *   2. Sayılar               → bağlam (ciro, kâr, marj, sipariş)
- *   3. Riskler / Fırsatlar   → derinlik
- *   4. Ürün performansı      → kanıt
+ *   1. Günün tek cümlesi   → kaç iş, ne kadar para, ne kadar acele
+ *   2. Kuyruk              → yapılacak işler, dört soruya cevaplı
+ *   3. Bağlam şeridi       → net kâr, marj, ciro (arka plan)
+ *   4. Risk/fırsat özeti   → türe göre dağılım
  *
- * Klasik panellerin hatası bunu ters sıralamaktır: grafikle başlayıp karar
- * vermeyi kullanıcıya bırakırlar. Bu ekranın tamamı, ilk bloğun okunmasıyla
- * işini bitirmiş sayılır; gerisi "neden?" diyenler için.
+ * Bilinçli olarak burada OLMAYANLAR ve sebepleri:
+ *
+ * • **Trend grafiği.** Yumuşak bir 30 günlük çizgiye bakıp kimse karar
+ *   vermez. Eskiden ekranın en büyük parçasıydı — yani karardan daha çok yer
+ *   kaplıyordu. `/satis` ve `/kar` sayfalarında duruyor.
+ * • **Sipariş sayısı.** Gurur metriği; hiçbir aksiyona bağlanmıyor.
+ * • **Ürün tablosu.** En kötü ürünler zaten kuyrukta, en iyiler sadece
+ *   keyif veriyordu. Tamamı `/urunler` sayfasında.
+ *
+ * Kokpitte aksiyon dışında ne varsa, aksiyonun yerini çalar.
  */
 
 /** Bölüm başlıklarındaki "Tümü →" bağlantısı. */
@@ -33,7 +39,7 @@ function DetailLink({
   href,
   label,
 }: {
-  href: "/priorities" | "/risks" | "/opportunities" | "/products" | "/sales";
+  href: "/priorities" | "/risks" | "/opportunities";
   label: string;
 }) {
   return (
@@ -47,106 +53,58 @@ function DetailLink({
   );
 }
 
-/** En yüksek ve en düşük kârlı üçer ürün — tablo yerine özet. */
-function topAndBottom<T>(items: readonly T[], compare: (a: T, b: T) => number) {
-  const sorted = [...items].sort(compare);
-  if (sorted.length <= 6) return sorted;
-  return [...sorted.slice(0, 3), ...sorted.slice(-3)];
-}
-
-const COCKPIT_SIGNAL_LIMIT = 3;
+const COCKPIT_QUEUE_LIMIT = 3;
 
 export async function CockpitPage({ locale }: { locale: Locale }) {
   const range = defaultRange();
 
-  // Tüm veri paralel çekilir: portlar birbirine bağımlı değil.
-  const [priorities, risks, opportunities, sales, profit, products] = await Promise.all(
-    [
-      container.priorities.getPriorities(range),
-      container.signals.getRisks(range),
-      container.signals.getOpportunities(range),
-      container.sales.getSummary(range),
-      container.profit.getSummary(range),
-      container.products.getPerformance(range),
-    ],
-  );
+  // Portlar birbirinden bağımsız; hepsi paralel çekilir.
+  const [priorities, risks, opportunities, sales, profit] = await Promise.all([
+    container.priorities.getPriorities(range),
+    container.signals.getRisks(range),
+    container.signals.getOpportunities(range),
+    container.sales.getSummary(range),
+    container.profit.getSummary(range),
+  ]);
 
   const [t, common] = await Promise.all([
     getTranslations("cockpit"),
     getTranslations("common"),
   ]);
 
-  const highlightProducts = topAndBottom(
-    products.filter((item) => item.unitsSold > 0),
-    (a, b) => b.netProfit.minor - a.netProfit.minor,
-  );
-
-  const chartPoints = sales.daily.map((point, index) => ({
-    date: point.date,
-    revenue: point.revenue.minor,
-    profit: profit.daily[index]?.profit.minor ?? 0,
-  }));
+  const queue = priorities.slice(0, COCKPIT_QUEUE_LIMIT);
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* 1 — KARAR */}
-      <SectionCard
-        title={t("prioritiesTitle")}
-        description={t("prioritiesDescription")}
-        count={priorities.length}
-        action={
-          priorities.length > 0 ? (
-            <DetailLink href="/priorities" label={common("viewAll")} />
-          ) : undefined
-        }
-        flush
-      >
-        <div className="px-4">
-          {priorities.length === 0 ? (
-            <EmptyState
-              icon={<CheckCircle2 className="size-6" />}
-              title={t("allClear")}
-              description={t("allClearDescription")}
-            />
-          ) : (
-            <SignalList
-              signals={priorities
-                .slice(0, COCKPIT_SIGNAL_LIMIT)
-                .map((action) => action.signal)}
-              locale={locale}
-              ranked
-              empty={{
-                title: t("allClear"),
-                description: t("allClearDescription"),
-              }}
-            />
-          )}
-        </div>
-      </SectionCard>
+    <div className="flex flex-col gap-5">
+      {/* 1 — GÜNÜN CÜMLESİ */}
+      <DayBrief priorities={queue} locale={locale} />
 
-      {/* 2 — BAĞLAM */}
-      <KpiRow sales={sales} profit={profit} locale={locale} />
-
-      <SectionCard
-        title={t("trendTitle")}
-        description={common("period", { days: DEFAULT_ANALYSIS_DAYS })}
-        action={<DetailLink href="/sales" label={common("detail")} />}
-      >
-        <TrendChart
-          points={chartPoints}
+      {/* 2 — KUYRUK */}
+      <Card className="px-4">
+        <SignalList
+          signals={queue.map((action) => action.signal)}
           locale={locale}
-          currency={CURRENCY}
-          labels={{
-            revenue: (await getTranslations("chart"))("revenue"),
-            profit: (await getTranslations("chart"))("profit"),
+          ranked
+          empty={{
+            title: t("allClear"),
+            description: t("allClearDescription"),
           }}
         />
-      </SectionCard>
+      </Card>
 
-      {/* 3 — DERİNLİK
-          Kart tekrarı yerine gruplu özet: öncelik listesindeki maddeler
-          burada bir daha görünmez, bunun yerine "hangi türden kaç tane ve
-          toplam ne kadar para" bilgisi verilir. */}
+      {priorities.length > queue.length && (
+        <div className="-mt-3">
+          <DetailLink
+            href="/priorities"
+            label={t("remaining", { count: priorities.length - queue.length })}
+          />
+        </div>
+      )}
+
+      {/* 3 — BAĞLAM */}
+      <ContextStrip sales={sales} profit={profit} locale={locale} />
+
+      {/* 4 — DAĞILIM */}
       <div className="grid gap-4 lg:grid-cols-2">
         <SectionCard
           title={t("risksTitle")}
@@ -195,16 +153,6 @@ export async function CockpitPage({ locale }: { locale: Locale }) {
           </div>
         </SectionCard>
       </div>
-
-      {/* 4 — KANIT */}
-      <SectionCard
-        title={t("productsTitle")}
-        description={t("productsDescription")}
-        action={<DetailLink href="/products" label={common("viewAll")} />}
-        flush
-      >
-        <ProductTable performance={highlightProducts} locale={locale} compact />
-      </SectionCard>
     </div>
   );
 }

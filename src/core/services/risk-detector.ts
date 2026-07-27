@@ -1,6 +1,5 @@
 import { daysInRange } from "../domain/date-range";
 import {
-  ZERO_MONEY,
   absMoney,
   isNegativeMoney,
   multiplyMoney,
@@ -10,7 +9,12 @@ import {
 import type { ProductPerformance } from "../domain/product";
 import type { Evidence, Signal, SignalSubject } from "../domain/signal";
 
-import { createSignal, type AnalysisContext } from "./analysis-context";
+import {
+  createSignal,
+  orderDeadlineOf,
+  perDayOf,
+  type AnalysisContext,
+} from "./analysis-context";
 
 /**
  * RİSK DEDEKTÖRÜ — 7 kural.
@@ -44,25 +48,45 @@ function clamp(value: number, min: number, max: number): number {
 
 /**
  * 1) Stok tükeniyor.
- * Risk altındaki para: stok bittikten sonra ufuk sonuna kadar yapılamayacak satış.
+ *
+ * Bu kuralın para hesabı, panelin inandırıcılığının sınandığı yerdir.
+ *
+ * Yanlış yol (ve yaygın olanı): "30 gün stoksuz kalırsan şu kadar CİRO
+ * kaçar". İki yönden birden abartır — satıcı 30 gün stoksuz beklemez ve
+ * kaçan cironun tamamı kâr değildir. Fiyatı ₺2.450, marjı %22 olan bir üründe
+ * bu iki hata birleşince gerçek kaybın ~25 katı bir rakam çıkar; satıcı ekrana
+ * bir kez bakıp "saçmalıyor" der ve panelin hiçbir sayısına güvenmez.
+ *
+ * Dürüst yol: satıcı bugün sipariş verirse mal `tedarik süresi` kadar gün
+ * sonra gelir. Elinde `stok yeterlilik günü` kadar mal var. Gerçekten
+ * stoksuz kalacağı süre ikisinin farkıdır. Kaybettiği de ciro değil,
+ * o adetlerden kazanacağı **birim kâr**.
  */
 const stockoutImminent: ProductRule = (performance, context) => {
-  const { stockoutDaysOfCover, stockoutHorizonDays } = context.rules.risk;
+  const { stockoutDaysOfCover } = context.rules.risk;
+  const { supplyLeadTimeDays } = context.rules.inventory;
   const cover = performance.daysOfCover;
 
   if (cover === null || cover >= stockoutDaysOfCover) return null;
 
-  const daysWithoutStock = Math.max(0, stockoutHorizonDays - cover);
-  const lostRevenue = multiplyMoney(
-    performance.product.price,
+  const daysWithoutStock = Math.max(0, supplyLeadTimeDays - cover);
+  const lostProfit = multiplyMoney(
+    performance.unitProfit,
     performance.dailyVelocity * daysWithoutStock,
+  );
+  // Bir gün geç sipariş vermek, stoksuz geçecek süreye bir gün ekler.
+  const costOfOneDayDelay = multiplyMoney(
+    performance.unitProfit,
+    performance.dailyVelocity,
   );
 
   return createSignal({
     kind: "risk",
     code: "STOCKOUT_IMMINENT",
     subject: subjectOf(performance),
-    moneyAtStake: lostRevenue,
+    moneyAtStake: lostProfit,
+    dailyImpact: costOfOneDayDelay,
+    deadline: orderDeadlineOf(cover, context),
     // 0 günde 10, eşikte 5: yaklaştıkça acilleşir.
     urgency: clamp(10 - (cover / stockoutDaysOfCover) * 5, 5, 10),
     evidence: [
@@ -70,6 +94,10 @@ const stockoutImminent: ProductRule = (performance, context) => {
         perDay: Math.round(performance.dailyVelocity * 10) / 10,
         stock: performance.product.stock,
         days: Math.round(cover * 10) / 10,
+      }),
+      evidence("leadTimeGap", {
+        leadDays: supplyLeadTimeDays,
+        gapDays: Math.round(daysWithoutStock * 10) / 10,
       }),
     ],
     context,
@@ -138,6 +166,7 @@ const marginErosion: ProductRule = (performance, context) => {
     code: "MARGIN_EROSION",
     subject: subjectOf(performance),
     moneyAtStake: lostProfit,
+    dailyImpact: perDayOf(lostProfit, context),
     urgency: belowCritical ? 7 : 6,
     evidence: [
       evidence("marginNow", { margin }),
@@ -152,6 +181,11 @@ const marginErosion: ProductRule = (performance, context) => {
 /**
  * 4) Yüksek iade oranı.
  * Az sayıda siparişte oran gürültülü olduğu için minimum adet şartı var.
+ *
+ * Para hesabı: iade tutarının tamamı **kayıp değildir** — mal geri gelir ve
+ * yeniden satılır. Gerçek kayıp, kabul edilebilir orandan fazla iade edilen
+ * adetlerin getirmediği kârdır. İade tutarını kayıp yazmak, sorunu 20 kata
+ * kadar abartır.
  */
 const highReturnRate: ProductRule = (performance, context) => {
   const { maxReturnRate, returnRateMinUnits } = context.rules.risk;
@@ -161,17 +195,25 @@ const highReturnRate: ProductRule = (performance, context) => {
   if (performance.unitsSold < returnRateMinUnits) return null;
   if (rate <= maxReturnRate) return null;
 
+  const excessUnits = (rate - maxReturnRate) * performance.unitsSold;
+  const lostProfit = multiplyMoney(performance.unitProfit, excessUnits);
+
   return createSignal({
     kind: "risk",
     code: "HIGH_RETURN_RATE",
     subject: subjectOf(performance),
-    moneyAtStake: performance.refunds,
+    moneyAtStake: lostProfit,
+    dailyImpact: perDayOf(lostProfit, context),
     urgency: 5,
     evidence: [
       evidence("returnRate", {
         rate,
         returned: performance.unitsReturned,
         sold: performance.unitsSold,
+      }),
+      evidence("excessReturns", {
+        excess: Math.round(excessUnits),
+        threshold: maxReturnRate,
       }),
     ],
     context,
@@ -186,11 +228,15 @@ const sellingAtLoss: ProductRule = (performance, context) => {
   if (performance.unitsSold === 0) return null;
   if (!isNegativeMoney(performance.netProfit)) return null;
 
+  const loss = absMoney(performance.netProfit);
+
   return createSignal({
     kind: "risk",
     code: "SELLING_AT_LOSS",
     subject: subjectOf(performance),
-    moneyAtStake: absMoney(performance.netProfit),
+    // Gerçekleşmiş zarar — tahmin değil, dönemde fiilen kaybedilen para.
+    moneyAtStake: loss,
+    dailyImpact: perDayOf(loss, context),
     // En acil kural: durdurulmadıkça her sipariş zararı artırır.
     urgency: 9,
     evidence: [
@@ -206,6 +252,11 @@ const sellingAtLoss: ProductRule = (performance, context) => {
 /**
  * 6) Reklam sızıntısı.
  * Harcama var, dönüş harcamayı karşılamıyor (ROAS < 1).
+ *
+ * Masadaki para doğrudan **reklam bütçesinin kendisidir**: geri dönmeyen,
+ * kampanya durdurulduğunda cebe kalacak tutar. Önceki hesap
+ * (`harcama − ciro`) ROAS 1'e yakınken sıfıra çöküyor ve gerçek yangını
+ * gizliyordu.
  */
 const adSpendLeak: ProductRule = (performance, context) => {
   const { minRoas } = context.rules.risk;
@@ -215,13 +266,12 @@ const adSpendLeak: ProductRule = (performance, context) => {
   if (performance.adSpend.minor <= 0) return null;
   if (roas >= minRoas) return null;
 
-  const leak = subtractMoney(performance.adSpend, performance.netRevenue);
-
   return createSignal({
     kind: "risk",
     code: "AD_SPEND_LEAK",
     subject: subjectOf(performance),
-    moneyAtStake: leak.minor > 0 ? leak : ZERO_MONEY,
+    moneyAtStake: performance.adSpend,
+    dailyImpact: perDayOf(performance.adSpend, context),
     urgency: 7,
     evidence: [
       evidence("roasBelowOne", {
@@ -244,18 +294,21 @@ const PRODUCT_RULES: readonly ProductRule[] = [
 ];
 
 /**
- * 7) Mağaza geneli ciro düşüşü.
- * Ürün bazlı değil, tek bir bütün-mağaza sinyali.
+ * 7) Mağaza geneli kâr düşüşü.
+ *
+ * Ciroya değil kâra bakar. Ciro sabitken kârın erimesi (komisyon zammı,
+ * artan reklam, ucuzlayan sepet) satıcı için ciro düşüşünden daha tehlikeli
+ * ve daha sinsi bir durumdur — ciroya bakan panellerin tamamen kaçırdığı şey.
  */
-function revenueDrop(context: AnalysisContext): Signal | null {
-  const { revenueDropRatio } = context.rules.risk;
-  const previous = context.previousStoreNetRevenue;
-  const current = context.storeNetRevenue;
+function profitDrop(context: AnalysisContext): Signal | null {
+  const { profitDropRatio } = context.rules.risk;
+  const previous = context.previousStoreNetProfit;
+  const current = context.storeNetProfit;
 
   if (previous.minor <= 0) return null;
 
   const change = (current.minor - previous.minor) / previous.minor;
-  if (change > revenueDropRatio) return null;
+  if (change > profitDropRatio) return null;
 
   const lost: Money = subtractMoney(previous, current);
 
@@ -264,8 +317,9 @@ function revenueDrop(context: AnalysisContext): Signal | null {
     code: "REVENUE_DROP",
     subject: { type: "store", label: "store" },
     moneyAtStake: lost,
+    dailyImpact: perDayOf(lost, context),
     urgency: 8,
-    evidence: [evidence("revenueChange", { change, current, previous })],
+    evidence: [evidence("profitChange", { change, current, previous })],
     context,
   });
 }
@@ -281,7 +335,7 @@ export function detectRisks(context: AnalysisContext): Signal[] {
     }
   }
 
-  const storeSignal = revenueDrop(context);
+  const storeSignal = profitDrop(context);
   if (storeSignal) signals.push(storeSignal);
 
   return signals;

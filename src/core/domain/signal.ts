@@ -82,8 +82,29 @@ export interface Signal {
   /**
    * Masadaki para: risk için kaybedilebilecek, fırsat için kazanılabilecek tutar.
    * Öncelik motorunun "etki" bileşeni doğrudan bundan türer.
+   *
+   * **Her zaman KÂR cinsindendir, ciro değil.** Bir satıcı için "₺1 milyon
+   * ciro kaçırdın" ile "₺40 bin kâr kaçırdın" arasında 25 katlık fark var;
+   * ilkini yazmak paneli inandırıcılıktan düşürür.
    */
   readonly moneyAtStake: Money;
+
+  /**
+   * Gecikilen her günün maliyeti. Kararı bugün değil yarın vermenin farkı.
+   *
+   * "₺40.000 riskte" soyut; "her gün ₺8.240" acildir. Aciliyeti hissettiren
+   * sayı toplam değil, bu türevdir.
+   */
+  readonly dailyImpact?: Money | undefined;
+
+  /**
+   * Kararın en geç verilmesi gereken gün.
+   *
+   * Tedarik süresi hesaba katılarak bulunur: stok 2 gün yeter ama tedarik
+   * 7 gün sürüyorsa son karar günü **dündü**. Bir listeyi operasyona
+   * çeviren alan budur.
+   */
+  readonly deadline?: IsoDate | undefined;
 
   /** 0–10. Ne kadar acil? (yarın mı patlar, üç ay sonra mı) */
   readonly urgency: number;

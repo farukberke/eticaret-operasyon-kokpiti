@@ -30,13 +30,13 @@ export async function SignalList({
     return <EmptyState title={empty.title} description={empty.description} />;
   }
 
-  const [signal, action, evidence, severity, amountCaption, subject, common] =
+  const [signal, action, evidence, severity, outcome, subject, common] =
     await Promise.all([
       getTranslations("signal"),
       getTranslations("action"),
       getTranslations("evidence"),
       getTranslations("severity"),
-      getTranslations("amountCaption"),
+      getTranslations("outcome"),
       getTranslations("subject"),
       getTranslations("common"),
     ]);
@@ -46,7 +46,7 @@ export async function SignalList({
     action,
     evidence,
     severity,
-    amountCaption,
+    outcome,
     subject,
     common,
   } as const;
@@ -64,12 +64,12 @@ export async function SignalList({
         return (
           <li key={view.id}>
             <SignalCard
-              {...(view.rank !== undefined ? { rank: view.rank } : {})}
+              rank={view.rank}
               title={view.title}
               evidence={view.evidence}
               action={view.action}
-              amount={view.amount}
-              amountCaption={view.amountCaption}
+              outcome={view.outcome}
+              deadline={view.deadline}
               severityLabel={view.severityLabel}
               severityTone={view.severityTone}
             />

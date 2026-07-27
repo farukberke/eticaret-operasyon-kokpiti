@@ -1,11 +1,13 @@
 import type { Evidence, EvidenceValue, Money, Severity, Signal } from "@/core/domain";
 import type { BadgeTone } from "@/ui/primitives/badge";
+import type { SignalOutcome } from "@/ui/patterns/signal-card";
 import {
   formatDelta,
   formatMoney,
   formatNumber,
   formatPercent,
   formatPoints,
+  formatShortDate,
 } from "@/lib/format";
 
 /**
@@ -29,7 +31,7 @@ export interface SignalTranslators {
   readonly action: Translate;
   readonly evidence: Translate;
   readonly severity: Translate;
-  readonly amountCaption: Translate;
+  readonly outcome: Translate;
   readonly subject: Translate;
   readonly common: Translate;
 }
@@ -40,8 +42,8 @@ export interface SignalView {
   readonly title: string;
   readonly evidence: string[];
   readonly action: string;
-  readonly amount: string;
-  readonly amountCaption: string;
+  readonly outcome: SignalOutcome;
+  readonly deadline?: { label: string; urgent: boolean };
   readonly severityLabel: string;
   readonly severityTone: BadgeTone;
 }
@@ -98,6 +100,62 @@ function renderEvidence(item: Evidence, locale: string, t: SignalTranslators): s
   return t.evidence(item.code, values);
 }
 
+/**
+ * Ölü stok diğerlerinden farklı bir para türü taşır.
+ *
+ * `DEAD_STOCK` dışındaki tüm sinyaller **akış** ölçer: dönemde kazanılan ya
+ * da kaybedilen kâr. Ölü stok ise **duran** parayı ölçer: rafta bekleyen
+ * sermaye. İkisine aynı cümleyi kurmak ("₺18.000 kaybediyorsun") yanlış olur;
+ * o para kaybolmadı, sıkıştı.
+ */
+const CAPITAL_SIGNALS = new Set(["DEAD_STOCK"]);
+
+function buildOutcome(
+  signal: Signal,
+  locale: string,
+  t: SignalTranslators,
+): SignalOutcome {
+  const amount = formatMoney(signal.moneyAtStake, locale);
+  const isCapital = CAPITAL_SIGNALS.has(signal.code);
+  const isOpportunity = signal.kind === "opportunity";
+
+  const variant = isCapital ? "capital" : isOpportunity ? "gain" : "loss";
+
+  return {
+    doLabel: t.outcome("doLabel"),
+    doValue: t.outcome(`${variant}.do`, { amount }),
+    skipLabel: t.outcome("skipLabel"),
+    skipValue: t.outcome(`${variant}.skip`, { amount }),
+    ...(signal.dailyImpact
+      ? {
+          skipDetail: t.outcome("perDay", {
+            amount: formatMoney(signal.dailyImpact, locale),
+          }),
+        }
+      : {}),
+  };
+}
+
+function buildDeadline(
+  signal: Signal,
+  locale: string,
+  t: SignalTranslators,
+): { label: string; urgent: boolean } | undefined {
+  if (!signal.deadline) return undefined;
+
+  // Son gün bugün ya da geçmişse acele vurgusu; "3 gün sonra" sakin kalır.
+  const urgent = signal.deadline <= signal.detectedAt;
+
+  return {
+    label: urgent
+      ? t.outcome("deadlineToday")
+      : t.outcome("deadlineOn", {
+          date: formatShortDate(signal.deadline, locale),
+        }),
+    urgent,
+  };
+}
+
 export function toSignalView(
   signal: Signal,
   locale: string,
@@ -106,6 +164,7 @@ export function toSignalView(
 ): SignalView {
   const subject =
     signal.subject.type === "product" ? signal.subject.label : t.subject("store");
+  const deadline = buildDeadline(signal, locale, t);
 
   return {
     id: signal.id,
@@ -113,8 +172,8 @@ export function toSignalView(
     title: t.signal(signal.code, { subject }),
     evidence: signal.evidence.map((item) => renderEvidence(item, locale, t)),
     action: t.action(signal.code),
-    amount: formatMoney(signal.moneyAtStake, locale),
-    amountCaption: t.amountCaption(signal.kind),
+    outcome: buildOutcome(signal, locale, t),
+    ...(deadline ? { deadline } : {}),
     severityLabel: t.severity(signal.severity),
     severityTone: SEVERITY_TONE[signal.severity],
   };

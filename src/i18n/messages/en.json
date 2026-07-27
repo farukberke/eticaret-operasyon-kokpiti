@@ -32,19 +32,20 @@
     "todayIs": "{date}",
     "prioritiesTitle": "What to do today",
     "prioritiesDescription": "Ranked by urgency and money at stake",
-    "trendTitle": "Revenue and profit",
     "risksTitle": "Risks",
     "risksDescription": "By type, with total money at stake",
     "opportunitiesTitle": "Opportunities",
     "opportunitiesDescription": "By type, with total upside",
-    "productsTitle": "Product performance",
-    "productsDescription": "Top and bottom three products",
     "allClear": "Nothing urgent today",
     "allClearDescription": "Every product looks healthy. Good day.",
     "noRisks": "No risks",
     "noRisksDescription": "Stock, margin and return rates are all in range.",
     "noOpportunities": "No pending opportunities",
-    "noOpportunitiesDescription": "No new trend or pricing opening right now."
+    "noOpportunitiesDescription": "No new trend or pricing opening right now.",
+    "briefCount": "You have {count} things to do today.",
+    "briefStake": "Acting protects {amount} in profit.",
+    "briefDueToday": "{count} of them need a decision today.",
+    "remaining": "{count} more waiting"
   },
   "kpi": {
     "revenue": "Revenue",
@@ -59,10 +60,6 @@
     "high": "High",
     "medium": "Medium",
     "low": "Low"
-  },
-  "amountCaption": {
-    "risk": "at risk",
-    "opportunity": "upside"
   },
   "subject": {
     "store": "Store-wide"
@@ -117,12 +114,14 @@
     "returnRate": "return rate {rate} · {returned} of {sold} returned",
     "lossPerPeriod": "{loss} lost on {units} sales",
     "roasBelowOne": "ROAS {roas} · {spend} spent, {revenue} earned",
-    "revenueChange": "{change} change · {previous} → {current}",
     "velocityGrowth": "{growth} growth · {before} → {now} units/day",
     "winnerRunningLow": "margin {margin} · {perDay}/day · {days} days of cover",
     "highMargin": "margin {margin}",
     "unsupportedWinner": "margin {margin} · ad share {spendShare} · {profit} profit",
-    "boughtTogether": "bought with {partner} in {count} orders"
+    "boughtTogether": "bought with {partner} in {count} orders",
+    "leadTimeGap": "{leadDays}-day lead time · {gapDays} days out of stock",
+    "excessReturns": "threshold {threshold} · {excess} extra returns",
+    "profitChange": "{change} change · {previous} → {current}"
   },
   "products": {
     "title": "Product performance",
@@ -195,5 +194,24 @@
     "down": "down",
     "flat": "unchanged",
     "srDelta": "{value} {direction} vs previous period"
+  },
+  "outcome": {
+    "doLabel": "If you act",
+    "skipLabel": "If you don't",
+    "perDay": "{amount} per day of delay",
+    "deadlineToday": "Decide: today",
+    "deadlineOn": "Decide by: {date}",
+    "loss": {
+      "do": "{amount} protected",
+      "skip": "{amount} lost"
+    },
+    "gain": {
+      "do": "{amount} gained",
+      "skip": "{amount} missed"
+    },
+    "capital": {
+      "do": "{amount} freed up",
+      "skip": "{amount} stays tied up"
+    }
   }
 }
