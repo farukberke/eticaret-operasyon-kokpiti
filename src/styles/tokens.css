@@ -1,0 +1,206 @@
+/**
+ * TASARIM TOKEN'LARI — tek doğruluk kaynağı.
+ *
+ * Kural: bileşenlerin içinde ham renk (hex/rgb) YAZILMAZ.
+ * Her renk buradaki semantik bir isimle çağrılır (bg-surface, text-fg-muted…).
+ * Böylece tema değişikliği tek dosyadan yapılır, 50 bileşen taranmaz.
+ *
+ * Renkler OKLCH ile tanımlı: açık/koyu tema arasında algılanan parlaklık
+ * tutarlı kalır, HSL'de olduğu gibi bazı tonlar sönük görünmez.
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* ---- Yüzeyler ---- */
+  --canvas: oklch(0.984 0.002 250); /* sayfa zemini */
+  --surface: oklch(1 0 0); /* kart zemini */
+  --surface-muted: oklch(0.968 0.003 250); /* tablo başlığı, ikincil blok */
+  --surface-raised: oklch(1 0 0); /* açılır menü, popover */
+
+  /* ---- Çizgiler ---- */
+  --border: oklch(0.918 0.004 250);
+  --border-strong: oklch(0.855 0.006 250);
+
+  /* ---- Metin ---- */
+  --fg: oklch(0.216 0.011 254); /* ana metin */
+  --fg-muted: oklch(0.508 0.013 254); /* etiket, açıklama */
+  --fg-subtle: oklch(0.633 0.011 254); /* en düşük vurgu */
+
+  /* ---- Marka / vurgu ---- */
+  --accent: oklch(0.548 0.176 262);
+  --accent-hover: oklch(0.494 0.176 262);
+  --accent-fg: oklch(0.99 0 0);
+  --accent-soft: oklch(0.952 0.028 262);
+
+  /* ---- Semantik durumlar ----
+     danger  = risk / kayıp / düşüş
+     success = fırsat / kâr / artış
+     warning = dikkat, henüz kayıp değil
+     info    = nötr bilgi */
+  --danger: oklch(0.553 0.208 25);
+  --danger-soft: oklch(0.958 0.028 25);
+  --danger-border: oklch(0.878 0.062 25);
+
+  --warning: oklch(0.618 0.148 62);
+  --warning-soft: oklch(0.965 0.042 76);
+  --warning-border: oklch(0.888 0.079 76);
+
+  --success: oklch(0.532 0.132 155);
+  --success-soft: oklch(0.955 0.038 155);
+  --success-border: oklch(0.868 0.068 155);
+
+  --info: oklch(0.556 0.114 232);
+  --info-soft: oklch(0.958 0.03 232);
+  --info-border: oklch(0.872 0.055 232);
+
+  /* ---- Grafik ----
+     Seri renkleri gözle seçilmedi: renk körlüğü ayrımı, parlaklık bandı,
+     kroma tabanı ve yüzey kontrastı için doğrulayıcıdan geçirildi.
+     Açık tema (yüzey #ffffff): en kötü CVD ΔE 27,4 · normal görüş ΔE 32,4
+     Koyu tema (yüzey #171b21): en kötü CVD ΔE 27,5 · normal görüş ΔE 29,4
+     Seri sırası SABİTTİR — filtre serileri azaltsa bile renkler kaymaz. */
+  --chart-1: oklch(0.548 0.176 262); /* ciro */
+  --chart-2: oklch(0.6 0.16 45); /* kâr */
+  /* Vurgulanmayan seri: "biri önemli, gerisi bağlam" düzeni için. */
+  --chart-muted: oklch(0.78 0.012 254);
+  --chart-grid: oklch(0.93 0.004 250);
+  --chart-axis: oklch(0.855 0.006 250);
+
+  /* ---- Odak halkası (erişilebilirlik) ---- */
+  --ring: oklch(0.548 0.176 262);
+
+  /* ---- Yarıçap ---- */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+.dark {
+  --canvas: oklch(0.181 0.012 258);
+  --surface: oklch(0.221 0.013 258);
+  --surface-muted: oklch(0.262 0.014 258);
+  --surface-raised: oklch(0.262 0.014 258);
+
+  --border: oklch(0.312 0.014 258);
+  --border-strong: oklch(0.395 0.016 258);
+
+  --fg: oklch(0.955 0.004 258);
+  --fg-muted: oklch(0.721 0.014 258);
+  --fg-subtle: oklch(0.596 0.014 258);
+
+  /* Parlaklık koyu tema veri-görselleştirme bandına (L 0,48–0,67) göre seçildi. */
+  --accent: oklch(0.655 0.158 262);
+  --accent-hover: oklch(0.728 0.148 262);
+  --accent-fg: oklch(0.16 0.02 262);
+  --accent-soft: oklch(0.302 0.062 262);
+
+  --danger: oklch(0.688 0.176 25);
+  --danger-soft: oklch(0.302 0.078 25);
+  --danger-border: oklch(0.408 0.108 25);
+
+  --warning: oklch(0.762 0.132 76);
+  --warning-soft: oklch(0.312 0.062 76);
+  --warning-border: oklch(0.418 0.088 76);
+
+  --success: oklch(0.688 0.128 155);
+  --success-soft: oklch(0.295 0.058 155);
+  --success-border: oklch(0.398 0.082 155);
+
+  --info: oklch(0.692 0.108 232);
+  --info-soft: oklch(0.298 0.052 232);
+  --info-border: oklch(0.402 0.075 232);
+
+  --ring: oklch(0.655 0.158 262);
+
+  /* Koyu tema seri renkleri: aynı hue'ların koyu yüzey için yeniden
+     basamaklanmış hâli — otomatik ters çevirme değil, seçilmiş değerler. */
+  --chart-1: oklch(0.655 0.158 262);
+  --chart-2: oklch(0.62 0.15 45);
+  --chart-muted: oklch(0.42 0.012 258);
+  --chart-grid: oklch(0.28 0.012 258);
+  --chart-axis: oklch(0.355 0.014 258);
+}
+
+/**
+ * `@theme inline` kullanımı bilinçli: token'lar var() referansı olarak kalır,
+ * böylece `.dark` sınıfı devreye girdiğinde utility sınıfları da değişir.
+ * (`@theme` — inline olmadan — değerleri derleme anında sabitler ve tema çalışmaz.)
+ */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-raised: var(--surface-raised);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-border: var(--success-border);
+
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-border: var(--info-border);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-muted: var(--chart-muted);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-axis: var(--chart-axis);
+
+  --color-ring: var(--ring);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Odak görünürlüğü pazarlık konusu değil — klavye kullanıcısı kaybolmamalı. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility tabular {
+  /* Sayı sütunları hizalı dursun: 1 ile 8 aynı genişlikte olsun.
+     Bir veri panelinde bu, okunabilirliğin yarısıdır. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}

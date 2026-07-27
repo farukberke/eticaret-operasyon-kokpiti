@@ -1,0 +1,199 @@
+{
+  "app": {
+    "title": "Cockpit",
+    "description": "E-commerce operations cockpit"
+  },
+  "nav": {
+    "sectionMain": "Overview",
+    "sectionDetail": "Details",
+    "cockpit": "Cockpit",
+    "priorities": "Priorities",
+    "sales": "Sales",
+    "profit": "Profit",
+    "risks": "Risks",
+    "opportunities": "Opportunities",
+    "products": "Products"
+  },
+  "common": {
+    "viewAll": "View all",
+    "detail": "Details",
+    "period": "Last {days} days",
+    "comparedToPrevious": "vs previous {days} days",
+    "empty": "—",
+    "point": "pts",
+    "sortHint": "Click to sort",
+    "itemCount": "{count} items",
+    "language": "Language",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "cockpit": {
+    "greeting": "Good morning",
+    "todayIs": "{date}",
+    "prioritiesTitle": "What to do today",
+    "prioritiesDescription": "Ranked by urgency and money at stake",
+    "trendTitle": "Revenue and profit",
+    "risksTitle": "Risks",
+    "risksDescription": "By type, with total money at stake",
+    "opportunitiesTitle": "Opportunities",
+    "opportunitiesDescription": "By type, with total upside",
+    "productsTitle": "Product performance",
+    "productsDescription": "Top and bottom three products",
+    "allClear": "Nothing urgent today",
+    "allClearDescription": "Every product looks healthy. Good day.",
+    "noRisks": "No risks",
+    "noRisksDescription": "Stock, margin and return rates are all in range.",
+    "noOpportunities": "No pending opportunities",
+    "noOpportunitiesDescription": "No new trend or pricing opening right now."
+  },
+  "kpi": {
+    "revenue": "Revenue",
+    "netProfit": "Net profit",
+    "margin": "Margin",
+    "orders": "Orders",
+    "unitsSold": "Units sold",
+    "averageOrderValue": "Average order"
+  },
+  "severity": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "amountCaption": {
+    "risk": "at risk",
+    "opportunity": "upside"
+  },
+  "subject": {
+    "store": "Store-wide"
+  },
+  "signal": {
+    "STOCKOUT_IMMINENT": "{subject} is about to run out",
+    "DEAD_STOCK": "{subject} isn't selling, capital is tied up",
+    "MARGIN_EROSION": "{subject} margin is eroding",
+    "HIGH_RETURN_RATE": "{subject} is being returned too often",
+    "SELLING_AT_LOSS": "{subject} is selling at a loss",
+    "AD_SPEND_LEAK": "{subject} is burning ad budget",
+    "REVENUE_DROP": "Store revenue has dropped",
+    "TRENDING_UP": "{subject} demand is climbing",
+    "RESTOCK_WINNER": "{subject} earns well but stock is running low",
+    "PRICE_TEST_CANDIDATE": "Time to price-test {subject}",
+    "HIGH_MARGIN_LOW_ADSPEND": "{subject} has no ad support",
+    "BUNDLE_CANDIDATE": "Bundle opportunity for {subject}"
+  },
+  "action": {
+    "STOCKOUT_IMMINENT": "Reorder stock now",
+    "DEAD_STOCK": "Discount or bundle it away",
+    "MARGIN_EROSION": "Review price or supply cost",
+    "HIGH_RETURN_RATE": "Fix product photos and size chart",
+    "SELLING_AT_LOSS": "Pause sales or raise the price",
+    "AD_SPEND_LEAK": "Pause the campaign or narrow targeting",
+    "REVENUE_DROP": "Investigate the declining categories",
+    "TRENDING_UP": "Reserve stock and raise ad budget",
+    "RESTOCK_WINNER": "Place a supply order",
+    "PRICE_TEST_CANDIDATE": "Run a price-increase test",
+    "HIGH_MARGIN_LOW_ADSPEND": "Allocate ad budget",
+    "BUNDLE_CANDIDATE": "List the two products as a bundle"
+  },
+  "signalGroup": {
+    "STOCKOUT_IMMINENT": "Running out of stock",
+    "DEAD_STOCK": "Dead stock",
+    "MARGIN_EROSION": "Margin erosion",
+    "HIGH_RETURN_RATE": "High returns",
+    "SELLING_AT_LOSS": "Selling at a loss",
+    "AD_SPEND_LEAK": "Ad spend leak",
+    "REVENUE_DROP": "Revenue drop",
+    "TRENDING_UP": "Trending up",
+    "RESTOCK_WINNER": "Restock winner",
+    "PRICE_TEST_CANDIDATE": "Price-test candidate",
+    "HIGH_MARGIN_LOW_ADSPEND": "Unsupported winner",
+    "BUNDLE_CANDIDATE": "Bundle candidate"
+  },
+  "evidence": {
+    "velocityVsStock": "sells {perDay}/day · {stock} left · {days} days of cover",
+    "noSalesInDays": "no sales in {days} days · {stock} units · {tiedCapital} tied up",
+    "marginNow": "margin {margin}",
+    "marginWas": "was {margin} last period · {dropPoints} drop",
+    "returnRate": "return rate {rate} · {returned} of {sold} returned",
+    "lossPerPeriod": "{loss} lost on {units} sales",
+    "roasBelowOne": "ROAS {roas} · {spend} spent, {revenue} earned",
+    "revenueChange": "{change} change · {previous} → {current}",
+    "velocityGrowth": "{growth} growth · {before} → {now} units/day",
+    "winnerRunningLow": "margin {margin} · {perDay}/day · {days} days of cover",
+    "highMargin": "margin {margin}",
+    "unsupportedWinner": "margin {margin} · ad share {spendShare} · {profit} profit",
+    "boughtTogether": "bought with {partner} in {count} orders"
+  },
+  "products": {
+    "title": "Product performance",
+    "description": "Product-level results for the last {days} days",
+    "name": "Product",
+    "category": "Category",
+    "unitsSold": "Sold",
+    "netRevenue": "Revenue",
+    "netProfit": "Net profit",
+    "margin": "Margin",
+    "returnRate": "Returns",
+    "stock": "Stock",
+    "daysOfCover": "Days of cover",
+    "daysUnit": "{days} days",
+    "empty": "No products found",
+    "emptyDescription": "Nothing to show for this period."
+  },
+  "sales": {
+    "title": "Sales",
+    "description": "Sales picture for the last {days} days",
+    "grossRevenue": "Gross revenue",
+    "netRevenue": "Net revenue",
+    "orderCount": "Orders",
+    "unitsSold": "Units sold",
+    "averageOrderValue": "Average order",
+    "dailyTitle": "Daily trend"
+  },
+  "profit": {
+    "title": "Profit",
+    "description": "Every line from revenue down to net profit",
+    "breakdownTitle": "Profit breakdown",
+    "grossRevenue": "Gross revenue",
+    "discounts": "Discounts",
+    "refunds": "Refunds",
+    "netRevenue": "Net revenue",
+    "cogs": "Cost of goods",
+    "commission": "Commission",
+    "shipping": "Shipping",
+    "adSpend": "Ad spend",
+    "netProfit": "Net profit",
+    "margin": "Margin",
+    "marginChange": "Margin change",
+    "dailyTitle": "Daily trend"
+  },
+  "risks": {
+    "title": "Risks",
+    "description": "Things losing money, or about to",
+    "empty": "No risks",
+    "emptyDescription": "Stock, margin and return rates are all in range."
+  },
+  "opportunities": {
+    "title": "Opportunities",
+    "description": "Upside waiting to be captured",
+    "empty": "No pending opportunities",
+    "emptyDescription": "No new trend or pricing opening right now."
+  },
+  "priorities": {
+    "title": "Priorities",
+    "description": "Risks and opportunities in one list, ranked by urgency × money at stake",
+    "score": "Score",
+    "empty": "Nothing urgent today",
+    "emptyDescription": "Every product looks healthy. Good day."
+  },
+  "chart": {
+    "revenue": "Revenue",
+    "profit": "Net profit"
+  },
+  "trend": {
+    "up": "up",
+    "down": "down",
+    "flat": "unchanged",
+    "srDelta": "{value} {direction} vs previous period"
+  }
+}

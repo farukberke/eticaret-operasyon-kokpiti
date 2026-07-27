@@ -1,0 +1,199 @@
+{
+  "app": {
+    "title": "Kokpit",
+    "description": "E-ticaret operasyon kokpiti"
+  },
+  "nav": {
+    "sectionMain": "Genel",
+    "sectionDetail": "Detay",
+    "cockpit": "Kokpit",
+    "priorities": "Öncelikler",
+    "sales": "Satış",
+    "profit": "Kâr",
+    "risks": "Riskler",
+    "opportunities": "Fırsatlar",
+    "products": "Ürünler"
+  },
+  "common": {
+    "viewAll": "Tümü",
+    "detail": "Detay",
+    "period": "Son {days} gün",
+    "comparedToPrevious": "önceki {days} güne göre",
+    "empty": "—",
+    "point": "puan",
+    "sortHint": "Sıralamak için tıkla",
+    "itemCount": "{count} adet",
+    "language": "Dil",
+    "openMenu": "Menüyü aç",
+    "closeMenu": "Menüyü kapat"
+  },
+  "cockpit": {
+    "greeting": "Günaydın",
+    "todayIs": "{date}",
+    "prioritiesTitle": "Bugün ne yapmalısın",
+    "prioritiesDescription": "Aciliyet ve para etkisine göre sıralandı",
+    "trendTitle": "Ciro ve kâr",
+    "risksTitle": "Riskler",
+    "risksDescription": "Türe göre, toplam para etkisiyle",
+    "opportunitiesTitle": "Fırsatlar",
+    "opportunitiesDescription": "Türe göre, toplam kazanç potansiyeliyle",
+    "productsTitle": "Ürün performansı",
+    "productsDescription": "En iyi ve en zayıf üçer ürün",
+    "allClear": "Bugün acil bir iş yok",
+    "allClearDescription": "Tüm ürünler sağlıklı görünüyor. İyi bir gün.",
+    "noRisks": "Risk yok",
+    "noRisksDescription": "Stok, marj ve iade oranları normal aralıkta.",
+    "noOpportunities": "Bekleyen fırsat yok",
+    "noOpportunitiesDescription": "Yeni bir trend ya da fiyat fırsatı görünmüyor."
+  },
+  "kpi": {
+    "revenue": "Ciro",
+    "netProfit": "Net kâr",
+    "margin": "Marj",
+    "orders": "Sipariş",
+    "unitsSold": "Satılan adet",
+    "averageOrderValue": "Ortalama sepet"
+  },
+  "severity": {
+    "critical": "Kritik",
+    "high": "Yüksek",
+    "medium": "Orta",
+    "low": "Düşük"
+  },
+  "amountCaption": {
+    "risk": "risk altında",
+    "opportunity": "fırsat"
+  },
+  "subject": {
+    "store": "Mağaza geneli"
+  },
+  "signal": {
+    "STOCKOUT_IMMINENT": "{subject} tükenmek üzere",
+    "DEAD_STOCK": "{subject} satmıyor, sermaye bağlı",
+    "MARGIN_EROSION": "{subject} marjı eriyor",
+    "HIGH_RETURN_RATE": "{subject} çok iade alıyor",
+    "SELLING_AT_LOSS": "{subject} zararına satılıyor",
+    "AD_SPEND_LEAK": "{subject} reklam bütçesini yakıyor",
+    "REVENUE_DROP": "Mağaza cirosu düştü",
+    "TRENDING_UP": "{subject} talebi yükseliyor",
+    "RESTOCK_WINNER": "{subject} kazandırıyor ama stoğu azalıyor",
+    "PRICE_TEST_CANDIDATE": "{subject} için fiyat testi zamanı",
+    "HIGH_MARGIN_LOW_ADSPEND": "{subject} desteklenmiyor",
+    "BUNDLE_CANDIDATE": "{subject} için paket fırsatı"
+  },
+  "action": {
+    "STOCKOUT_IMMINENT": "Hemen stok tazele",
+    "DEAD_STOCK": "İndirim ya da paketle erit",
+    "MARGIN_EROSION": "Fiyatı ya da tedarik maliyetini gözden geçir",
+    "HIGH_RETURN_RATE": "Ürün görselini ve beden tablosunu düzelt",
+    "SELLING_AT_LOSS": "Satışı durdur ya da fiyatı yükselt",
+    "AD_SPEND_LEAK": "Kampanyayı durdur ya da hedeflemeyi daralt",
+    "REVENUE_DROP": "Düşen kategorileri incele",
+    "TRENDING_UP": "Stok ayır ve reklam bütçesini artır",
+    "RESTOCK_WINNER": "Tedarik siparişi ver",
+    "PRICE_TEST_CANDIDATE": "Fiyat testi başlat",
+    "HIGH_MARGIN_LOW_ADSPEND": "Reklam bütçesi ayır",
+    "BUNDLE_CANDIDATE": "İki ürünü paket olarak listele"
+  },
+  "signalGroup": {
+    "STOCKOUT_IMMINENT": "Stok tükeniyor",
+    "DEAD_STOCK": "Ölü stok",
+    "MARGIN_EROSION": "Marj erozyonu",
+    "HIGH_RETURN_RATE": "Yüksek iade",
+    "SELLING_AT_LOSS": "Zararına satış",
+    "AD_SPEND_LEAK": "Reklam sızıntısı",
+    "REVENUE_DROP": "Ciro düşüşü",
+    "TRENDING_UP": "Yükselen trend",
+    "RESTOCK_WINNER": "Stok tazeleme",
+    "PRICE_TEST_CANDIDATE": "Fiyat testi adayı",
+    "HIGH_MARGIN_LOW_ADSPEND": "Desteklenmeyen kazanan",
+    "BUNDLE_CANDIDATE": "Paket adayı"
+  },
+  "evidence": {
+    "velocityVsStock": "günde {perDay} adet satıyor · {stock} adet kaldı · {days} gün yeter",
+    "noSalesInDays": "{days} gündür satış yok · {stock} adet · {tiedCapital} bağlı",
+    "marginNow": "marj {margin}",
+    "marginWas": "önceki dönem {margin} · {dropPoints} düşüş",
+    "returnRate": "iade oranı {rate} · {sold} satıştan {returned} iade",
+    "lossPerPeriod": "{units} satışta {loss} zarar",
+    "roasBelowOne": "ROAS {roas} · {spend} harcama, {revenue} ciro",
+    "revenueChange": "{change} değişim · {previous} → {current}",
+    "velocityGrowth": "{growth} artış · günde {before} → {now} adet",
+    "winnerRunningLow": "marj {margin} · günde {perDay} adet · {days} gün yeter",
+    "highMargin": "marj {margin}",
+    "unsupportedWinner": "marj {margin} · reklam payı {spendShare} · {profit} kâr",
+    "boughtTogether": "{count} siparişte {partner} ile birlikte alındı"
+  },
+  "products": {
+    "title": "Ürün performansı",
+    "description": "Son {days} günün ürün bazlı sonuçları",
+    "name": "Ürün",
+    "category": "Kategori",
+    "unitsSold": "Satış",
+    "netRevenue": "Ciro",
+    "netProfit": "Net kâr",
+    "margin": "Marj",
+    "returnRate": "İade",
+    "stock": "Stok",
+    "daysOfCover": "Stok günü",
+    "daysUnit": "{days} gün",
+    "empty": "Ürün bulunamadı",
+    "emptyDescription": "Bu dönemde gösterilecek ürün yok."
+  },
+  "sales": {
+    "title": "Satış",
+    "description": "Son {days} günün satış tablosu",
+    "grossRevenue": "Brüt ciro",
+    "netRevenue": "Net ciro",
+    "orderCount": "Sipariş",
+    "unitsSold": "Satılan adet",
+    "averageOrderValue": "Ortalama sepet",
+    "dailyTitle": "Günlük seyir"
+  },
+  "profit": {
+    "title": "Kâr",
+    "description": "Cirodan net kâra kadar her kalem",
+    "breakdownTitle": "Kâr dökümü",
+    "grossRevenue": "Brüt ciro",
+    "discounts": "İskonto",
+    "refunds": "İade",
+    "netRevenue": "Net ciro",
+    "cogs": "Ürün maliyeti",
+    "commission": "Komisyon",
+    "shipping": "Kargo",
+    "adSpend": "Reklam",
+    "netProfit": "Net kâr",
+    "margin": "Marj",
+    "marginChange": "Marj değişimi",
+    "dailyTitle": "Günlük seyir"
+  },
+  "risks": {
+    "title": "Riskler",
+    "description": "Para kaybettiren ya da kaybettirecek durumlar",
+    "empty": "Risk yok",
+    "emptyDescription": "Stok, marj ve iade oranları normal aralıkta."
+  },
+  "opportunities": {
+    "title": "Fırsatlar",
+    "description": "Değerlendirilmeyi bekleyen kazanç alanları",
+    "empty": "Bekleyen fırsat yok",
+    "emptyDescription": "Yeni bir trend ya da fiyat fırsatı görünmüyor."
+  },
+  "priorities": {
+    "title": "Öncelikler",
+    "description": "Riskler ve fırsatlar, aciliyet × para etkisine göre tek listede",
+    "score": "Skor",
+    "empty": "Bugün acil bir iş yok",
+    "emptyDescription": "Tüm ürünler sağlıklı görünüyor. İyi bir gün."
+  },
+  "chart": {
+    "revenue": "Ciro",
+    "profit": "Net kâr"
+  },
+  "trend": {
+    "up": "arttı",
+    "down": "azaldı",
+    "flat": "değişmedi",
+    "srDelta": "önceki döneme göre {value} {direction}"
+  }
+}
