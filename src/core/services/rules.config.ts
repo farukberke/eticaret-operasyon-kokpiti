@@ -15,6 +15,7 @@ export interface RulesConfig {
   readonly risk: RiskRules;
   readonly opportunity: OpportunityRules;
   readonly priority: PriorityRules;
+  readonly cost: CostRules;
 }
 
 /**
@@ -103,6 +104,30 @@ export interface PriorityRules {
   readonly cockpitLimit: number;
 }
 
+/**
+ * Eksik maliyet kuyruğunun eşikleri.
+ *
+ * Sıralamayı bu sayılar **belirlemez** — sıra her zaman tutar, hacim ve
+ * eskilik üçlüsünden çıkar. Bu eşikler yalnızca kullanıcıya gösterilecek
+ * seviyeyi ve "neden öncelikli" cümlesini seçer: aynı listede ₺80.000'lik bir
+ * eksik ile ₺40'lık bir eksik aynı rozetle durursa rozet bilgi taşımaz.
+ */
+export interface CostRules {
+  /** Bu tutarın üstündeki hesaplanamayan satış tek başına kritiktir. */
+  readonly criticalRevenue: Money;
+  /** "Kayda değer" tutar eşiği — gerekçe seçiminde de kullanılır. */
+  readonly notableRevenue: Money;
+  /**
+   * Tutar küçük olsa bile bu kadar siparişe yayılan eksik maliyet öne çıkar:
+   * çok siparişe dokunan bir eksik, panelin tamamına yayılan bir kör noktadır.
+   */
+  readonly notableOrderCount: number;
+  /** En eski etkilenen sipariş bu kadar gün geride kaldıysa iş bayatlamıştır. */
+  readonly staleDays: number;
+  /** Eylem bölümünde kaç ürün gösterilsin — gerisi zaten listede duruyor. */
+  readonly actionLimit: number;
+}
+
 export const DEFAULT_RULES: RulesConfig = {
   inventory: {
     supplyLeadTimeDays: 7,
@@ -137,5 +162,13 @@ export const DEFAULT_RULES: RulesConfig = {
   priority: {
     impactSaturation: lira(100_000),
     cockpitLimit: 3,
+  },
+
+  cost: {
+    criticalRevenue: lira(25_000),
+    notableRevenue: lira(5_000),
+    notableOrderCount: 10,
+    staleDays: 14,
+    actionLimit: 5,
   },
 };

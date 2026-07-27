@@ -2,7 +2,12 @@ import type { DateRange, IsoDate } from "../domain/date-range";
 import type { ProfitSummary, SalesSummary } from "../domain/metrics";
 import type { PriorityAction } from "../domain/priority";
 import type { ProductPerformance } from "../domain/product";
-import type { CostDefault, CostTable, ProductCost } from "../domain/cost";
+import type {
+  CostDefault,
+  CostTable,
+  MissingCostReport,
+  ProductCost,
+} from "../domain/cost";
 import type { Signal } from "../domain/signal";
 import type { TaskState } from "../domain/task";
 
@@ -82,6 +87,19 @@ export interface CostPort {
   saveProductCosts(costs: readonly ProductCost[]): Promise<void>;
   removeProductCost(productId: string, effectiveFrom: IsoDate): Promise<void>;
   saveDefault(entry: CostDefault): Promise<void>;
+}
+
+/**
+ * Maliyet verisinin **okunması** — kalıcılıktan ayrı bir sözleşme.
+ *
+ * `CostPort` yazma tarafıdır (dosya, yarın veritabanı). Bu port ise analizin
+ * sonucudur: eksik maliyetin siparişlere ve paraya ne yaptığı. Aynı arayüze
+ * sıkıştırmak, "kaydet" ile "hesapla"yı aynı adapter'a bağlamak olurdu;
+ * gerçek pazaryeri entegrasyonunda ikisi farklı yerlerden gelecek.
+ */
+export interface CostInsightPort {
+  /** Maliyeti eksik ürünler, öncelik sırasında. */
+  getMissingCosts(range: DateRange): Promise<MissingCostReport>;
 }
 
 /**

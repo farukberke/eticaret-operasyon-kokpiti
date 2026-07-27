@@ -137,6 +137,72 @@ export function costStatusOf(cost: ResolvedCost): CostStatus {
 }
 
 /**
+ * Eksik maliyetin **operasyonel etkisi**.
+ *
+ * `CostCoverage` "ne kadarını ölçemiyoruz" der ve orada durur. Bu tip bir
+ * adım öteye geçip "önce hangisini gireyim" sorusunu cevaplar: eksik maliyet
+ * bir liste satırı değil, sıraya girmiş bir iştir ve sırayı ürün adı değil
+ * paranın ve hacmin büyüklüğü belirler.
+ *
+ * Bilinçli olarak **kâr kaybı yok**: maliyet bilinmiyorsa kaybedilen kâr da
+ * bilinemez. Yalnızca "kârı hesaplanamayan satış tutarı" gerçekten ölçülebilir
+ * bir sayıdır ve rapor yalnızca onu taşır.
+ */
+export interface MissingCostImpact {
+  readonly productId: string;
+  readonly name: string;
+  readonly sku: string;
+  /** Varsa ikincil tanımlayıcı — kullanıcı ürünü panelinde bununla arıyor olabilir. */
+  readonly barcode?: string | undefined;
+
+  /** Maliyeti çözümlenemeyen sipariş satırı sayısı. */
+  readonly affectedLines: number;
+  /** Bu satırların dağıldığı **farklı** sipariş sayısı. */
+  readonly affectedOrders: number;
+  readonly affectedUnits: number;
+
+  /**
+   * Bu satırların net satış tutarı: brüt − pay edilen iskonto − iade.
+   *
+   * Kârı hesaplanamayan tutar budur. Ürünün dönemdeki tüm cirosu değil —
+   * yalnızca maliyetin gerçekten çözümlenemediği satırlar.
+   */
+  readonly uncomputableRevenue: Money;
+
+  readonly firstOrderDate: IsoDate;
+  readonly lastOrderDate: IsoDate;
+
+  readonly level: MissingCostLevel;
+  /** Bu ürünün neden öncelikli olduğu — ekranda cümleye çevrilir. */
+  readonly reason: MissingCostReason;
+}
+
+export type MissingCostLevel = "critical" | "high" | "normal";
+
+/**
+ * Önceliğin gerekçesi.
+ *
+ * `revenue` → tutar tek başına büyük · `volume` → tutar küçük ama çok
+ * siparişe yayılıyor · `age` → küçük ve seyrek, ama uzun süredir açık.
+ */
+export type MissingCostReason = "revenue" | "volume" | "age";
+
+/**
+ * Eksik maliyet raporu.
+ *
+ * `ordersConsidered` ve `productsInCatalog` yalnızca boş durumu ayırt etmek
+ * için var: hiç sipariş yokken "tüm maliyetler tamam" demek, boş bir defteri
+ * temiz sanmaktır.
+ */
+export interface MissingCostReport {
+  /** Öncelik sırasında; sıralama deterministiktir. */
+  readonly items: readonly MissingCostImpact[];
+  /** Analiz penceresindeki sipariş sayısı. */
+  readonly ordersConsidered: number;
+  readonly productsInCatalog: number;
+}
+
+/**
  * Aynı ürün + aynı geçerlilik tarihi için iki kayıt olamaz.
  *
  * Olsaydı hangisinin geçerli olduğu yazma sırasına bağlı kalır ve kâr

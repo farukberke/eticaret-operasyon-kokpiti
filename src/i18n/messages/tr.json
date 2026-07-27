@@ -294,6 +294,26 @@
     "vatNotice": "Tüm hesaplar KDV hariç modeldir. Rakamlar operasyon kararı içindir, kesin muhasebe sonucu değildir.",
     "missingSummary": "{count} üründe maliyet eksik · {revenue} ciro değerlendirilemiyor",
     "allComplete": "Tüm ürünlerin maliyeti girilmiş",
+    "priorityTitle": "Önce bunları tamamlayın",
+    "priorityDescription": "Maliyeti eksik olduğu için en çok siparişi ve en çok parayı ölçülemez bırakan ürünler — sırayla.",
+    "priorityImpact": "Bu ürünün maliyeti eksik olduğu için {orders} siparişin ve {revenue} satışın kârı hesaplanamıyor.",
+    "priorityDetail": "{units} adet · {lines} sipariş satırı · {from} – {to}",
+    "priorityCta": "Önce maliyeti ekle",
+    "priorityRemaining": "Kuyrukta {count} ürün daha var; hepsi aşağıdaki listede.",
+    "priorityLevel": {
+      "critical": "Önce bu",
+      "high": "Öncelikli",
+      "normal": "Sırada"
+    },
+    "priorityReason": {
+      "revenue": "Öncelikli, çünkü ölçülemeyen satış tutarı burada en yüksek.",
+      "volume": "Öncelikli, çünkü tek bir eksik kayıt çok sayıda siparişi kör bırakıyor.",
+      "age": "Öncelikli, çünkü bu eksik uzun süredir açık ve geçmiş kâr hâlâ hesaplanamıyor."
+    },
+    "priorityAllCovered": "Bu dönemdeki siparişlerin tamamında ürün maliyeti tanımlı",
+    "priorityAllCoveredHint": "Kâr rakamları maliyet tarafında eksiksiz. Reklam, iade ve komisyon gibi diğer kalemler ayrı olarak değerlendirilir.",
+    "priorityNoData": "Bu dönemde değerlendirilecek sipariş yok",
+    "priorityNoDataHint": "Sipariş verisi geldiğinde hangi ürünün maliyetini önce girmeniz gerektiğini burada göreceksiniz.",
     "importTitle": "Toplu içe aktarma",
     "invalid": "Girilen değer geçersiz",
     "importDescription": "Ürün maliyetlerini CSV dosyasıyla tek seferde girin. Dosyayı seçtiğinizde önce ne olacağını gösterir; onaylamadan hiçbir kayıt yazılmaz.",

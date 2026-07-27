@@ -1,6 +1,7 @@
 import { lastDays, type DateRange } from "@/core/domain";
 import type {
   ClockPort,
+  CostInsightPort,
   PriorityPort,
   ProductPort,
   ProfitPort,
@@ -11,6 +12,7 @@ import type {
 import {
   loadCostSource,
   mockClock,
+  mockCostInsightPort,
   mockPriorityPort,
   mockProductPort,
   mockProfitPort,
@@ -42,6 +44,7 @@ export interface Container {
   readonly products: ProductPort;
   readonly signals: SignalPort;
   readonly priorities: PriorityPort;
+  readonly costInsights: CostInsightPort;
 }
 
 export const container: Container = {
@@ -51,6 +54,7 @@ export const container: Container = {
   products: mockProductPort,
   signals: mockSignalPort,
   priorities: mockPriorityPort,
+  costInsights: mockCostInsightPort,
 };
 
 /**

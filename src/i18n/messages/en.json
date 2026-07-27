@@ -294,6 +294,26 @@
     "vatNotice": "All figures exclude VAT. They are for operational decisions, not accounting.",
     "missingSummary": "{count} products missing cost · {revenue} revenue can't be evaluated",
     "allComplete": "Every product has a cost",
+    "priorityTitle": "Complete these first",
+    "priorityDescription": "The missing costs leaving the most orders and the most money unmeasurable — in order.",
+    "priorityImpact": "This product's cost is missing, so profit can't be calculated for {orders, plural, one {# order} other {# orders}} and {revenue} in sales.",
+    "priorityDetail": "{units} units · {lines, plural, one {# order line} other {# order lines}} · {from} – {to}",
+    "priorityCta": "Add the cost first",
+    "priorityRemaining": "{count} more products are queued; all of them are in the list below.",
+    "priorityLevel": {
+      "critical": "Start here",
+      "high": "Priority",
+      "normal": "Queued"
+    },
+    "priorityReason": {
+      "revenue": "Prioritised because the unmeasurable sales amount is highest here.",
+      "volume": "Prioritised because one missing record leaves many orders in the dark.",
+      "age": "Prioritised because this gap has been open a long time and past profit still can't be calculated."
+    },
+    "priorityAllCovered": "Every order in this period has a product cost",
+    "priorityAllCoveredHint": "Nothing is missing on the cost side. Ad spend, returns and commission are assessed separately.",
+    "priorityNoData": "No orders to assess in this period",
+    "priorityNoDataHint": "Once order data arrives, this is where you'll see which product's cost to enter first.",
     "importTitle": "Bulk import",
     "invalid": "Invalid value",
     "importDescription": "Enter product costs in bulk with a CSV file. Choosing a file shows what will happen first; nothing is written until you confirm.",

@@ -10,6 +10,7 @@ import {
 } from "@/core/domain";
 import type {
   ClockPort,
+  CostInsightPort,
   PriorityPort,
   ProductPort,
   ProfitPort,
@@ -20,6 +21,7 @@ import {
   createAnalysisContext,
   type AnalysisContext,
 } from "@/core/services/analysis-context";
+import { getMissingCostImpacts } from "@/core/services/missing-cost";
 import { detectOpportunities } from "@/core/services/opportunity-detector";
 import { detectRisks } from "@/core/services/risk-detector";
 import { buildPriorities } from "@/core/services/priority-engine";
@@ -134,6 +136,25 @@ export const mockProfitPort: ProfitPort = {
 export const mockProductPort: ProductPort = {
   async getPerformance(range) {
     return (await contextForRange(range)).performance;
+  },
+};
+
+/**
+ * Eksik maliyet raporu da **aynı analiz bağlamından** beslenir.
+ *
+ * Kendi veri kümesini ve çözümleyicisini kurmuş olsaydı, maliyet ekranı ile
+ * kâr ekranı aynı istekte iki farklı maliyet tablosu görebilirdi.
+ */
+export const mockCostInsightPort: CostInsightPort = {
+  async getMissingCosts(range) {
+    const context = await contextForRange(range);
+    return getMissingCostImpacts({
+      dataset: context.dataset,
+      range: context.range,
+      costs: context.costs,
+      today: context.today,
+      rules: context.rules,
+    });
   },
 };
 

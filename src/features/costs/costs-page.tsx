@@ -1,15 +1,20 @@
-import { Info } from "lucide-react";
+import { CircleCheck, Info, PackageOpen } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { toRatio } from "@/core/domain";
+import { DEFAULT_RULES } from "@/core/services/rules.config";
 import { container, defaultRange } from "@/data/container";
 import { EMPTY, formatMoney, formatPercent, formatShortDate } from "@/lib/format";
 import type { Locale } from "@/i18n/routing";
 import { Card } from "@/ui/primitives/card";
+import { EmptyState } from "@/ui/patterns/empty-state";
 import { PageHeader } from "@/ui/patterns/page-header";
+import { SectionCard } from "@/ui/patterns/section-card";
 
 import { CostImport } from "./cost-import.client";
 import { CostList, type CostListRow } from "./cost-list.client";
+import { MissingCostPanel } from "./missing-cost-panel.client";
+import { buildMissingCostRows } from "./missing-cost-view";
 import { templateCsv } from "./import-actions";
 
 /**
@@ -21,9 +26,10 @@ import { templateCsv } from "./import-actions";
  */
 export async function CostsPage({ locale }: { locale: Locale }) {
   const range = defaultRange();
-  const [performance, profit, template, t] = await Promise.all([
+  const [performance, profit, missing, template, t] = await Promise.all([
     container.products.getPerformance(range),
     container.profit.getSummary(range),
+    container.costInsights.getMissingCosts(range),
     templateCsv(),
     getTranslations("costs"),
   ]);
@@ -65,6 +71,18 @@ export async function CostsPage({ locale }: { locale: Locale }) {
 
   const { coverage } = profit;
 
+  /**
+   * Boş durumlar birbirine karıştırılmamalı.
+   *
+   * Hiç sipariş yokken "tüm maliyetler tamam" demek, boş bir defteri temiz
+   * sanmaktır: kullanıcı kâr rakamlarına güvenir, oysa ölçülmüş hiçbir şey
+   * yoktur. Bu yüzden veri yokluğu ayrı bir durum.
+   */
+  const hasData = missing.ordersConsidered > 0 && missing.productsInCatalog > 0;
+  const limit = DEFAULT_RULES.cost.actionLimit;
+  const missingRows = buildMissingCostRows(missing.items.slice(0, limit), locale);
+  const remaining = Math.max(0, missing.items.length - missingRows.length);
+
   return (
     <>
       <PageHeader title={t("title")} description={t("description")} />
@@ -86,6 +104,28 @@ export async function CostsPage({ locale }: { locale: Locale }) {
         ) : (
           <p className="text-success text-sm font-medium">{t("allComplete")}</p>
         )}
+
+        <SectionCard
+          title={t("priorityTitle")}
+          description={t("priorityDescription")}
+          {...(missingRows.length > 0 ? { count: missing.items.length } : {})}
+        >
+          {!hasData ? (
+            <EmptyState
+              icon={<PackageOpen className="size-5" aria-hidden />}
+              title={t("priorityNoData")}
+              description={t("priorityNoDataHint")}
+            />
+          ) : missingRows.length === 0 ? (
+            <EmptyState
+              icon={<CircleCheck className="text-success size-5" aria-hidden />}
+              title={t("priorityAllCovered")}
+              description={t("priorityAllCoveredHint")}
+            />
+          ) : (
+            <MissingCostPanel rows={missingRows} today={today} remaining={remaining} />
+          )}
+        </SectionCard>
 
         <CostImport template={template} />
 
