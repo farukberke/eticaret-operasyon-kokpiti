@@ -190,7 +190,7 @@
     }
   },
   "stockAlerts": {
-    "title": "Check these in stock first",
+    "title": "Products that need priority purchasing today",
     "description": "Sorted by stockout risk and data issues.",
     "empty": "No products need stock action for the selected period.",
     "emptyDescription": "No critical, low, negative, or unknown-stock products found.",
@@ -213,6 +213,14 @@
     "reorder": {
       "quantity": "Suggested reorder: {count} units",
       "basis": "Estimated for a {days}-day target stock at an average of {velocity} units/day."
+    }
+  },
+  "purchasePriority": {
+    "rankBadge": "Priority #{rank}",
+    "impact": {
+      "negative": "If delayed, the uncertainty in the stock record may persist and later decisions may rely on incorrect data.",
+      "critical": "If delayed, the stockout risk looks imminent; some demand may go unmet.",
+      "low": "If delayed, a stockout risk may emerge in the coming weeks."
     }
   },
   "sales": {

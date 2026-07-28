@@ -7,6 +7,10 @@ import {
   comparisonRangeOf,
   signalsAtStake,
 } from "@/core/services/period-comparison";
+import {
+  buildPurchasePriorities,
+  orderStockAlertsByPriority,
+} from "@/core/services/purchase-priority";
 import { buildReorderRecommendations } from "@/core/services/reorder-suggestion";
 import { buildStockAlerts } from "@/core/services/stock-alerts";
 import { buildStockForecasts } from "@/core/services/stock-forecast";
@@ -162,6 +166,19 @@ export async function CockpitPage({
   const reorderRecommendations = buildReorderRecommendations(
     productPerformance,
     stockForecasts,
+  );
+  /**
+   * Satın alma önceliği — `stockAlerts` ve `reorderRecommendations`i olduğu
+   * gibi okur, ikisini de yeniden hesaplamaz. Kartın gördüğü `alerts` burada,
+   * tek yerde, rütbeye göre dizilir; kart kendisi sıralama yapmaz.
+   */
+  const purchasePriorities = buildPurchasePriorities(
+    stockAlerts,
+    reorderRecommendations,
+  );
+  const orderedStockAlerts = orderStockAlertsByPriority(
+    stockAlerts,
+    purchasePriorities,
   );
 
   const [t, common, comparisonMessages] = await Promise.all([
@@ -321,15 +338,18 @@ export async function CockpitPage({
           STOK UYARILARI — ürün tablosundaki tahminin operasyon karşılığı.
           Risk motorunun ürettiği `STOCKOUT_IMMINENT` yalnızca maliyeti bilinen
           ve kritik eşiğin altındaki ürünleri kapsar; burası düşük, negatif ve
-          bilinmeyen stok durumlarını da gösterir.
+          bilinmeyen stok durumlarını da gösterir. Liste satın alma öncelik
+          motoruna göre dizilir: ilk görünen ürün gerçekten en yüksek
+          öncelikli üründür.
         */}
         <StockAlertsCard
-          alerts={stockAlerts}
+          alerts={orderedStockAlerts}
           windowDays={stockForecasts.windowDays}
           hasData={productPerformance.length > 0}
           locale={locale}
           selection={selection}
           reorderRecommendations={reorderRecommendations}
+          purchasePriorities={purchasePriorities}
         />
 
         {/* 5 — KAPANIŞ. Günün işi bittikten sonra okunacak not. */}

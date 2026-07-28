@@ -190,7 +190,7 @@
     }
   },
   "stockAlerts": {
-    "title": "Stokta önce bunlara bakın",
+    "title": "Bugün öncelikli satın alma gerektiren ürünler",
     "description": "Tükenme riski ve veri sorunlarına göre sıralı.",
     "empty": "Seçilen dönemde stok müdahalesi gereken ürün yok.",
     "emptyDescription": "Kritik, düşük, negatif ya da bilinmeyen stoklu ürün görünmüyor.",
@@ -213,6 +213,14 @@
     "reorder": {
       "quantity": "Önerilen sipariş: {count} adet",
       "basis": "Günde ortalama {velocity} adet satışa göre, {days} günlük hedef stok için tahmini."
+    }
+  },
+  "purchasePriority": {
+    "rankBadge": "Öncelik #{rank}",
+    "impact": {
+      "negative": "Ertelenirse stok kaydındaki belirsizlik sürebilir ve sonraki kararlar hatalı veriye dayanabilir.",
+      "critical": "Ertelenirse tükenme riski yakın görünüyor; talebin bir kısmı karşılanamayabilir.",
+      "low": "Ertelenirse önümüzdeki haftalarda stok tükenme riski oluşabilir."
     }
   },
   "sales": {

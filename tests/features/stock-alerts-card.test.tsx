@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it } from "vitest";
 
+import type { PurchasePriorityItem } from "@/core/services/purchase-priority";
 import type { ReorderRecommendation } from "@/core/services/reorder-suggestion";
 import type { StockAlert } from "@/core/services/stock-alerts";
 import type { AnalysisSelection } from "@/core/services/analysis-window";
@@ -37,6 +38,8 @@ const DEFAULT_WINDOW: AnalysisSelection = { preset: "last30" };
 
 const EMPTY_RECOMMENDATIONS: ReadonlyMap<string, ReorderRecommendation> = new Map();
 
+const EMPTY_PRIORITIES: readonly PurchasePriorityItem[] = [];
+
 function renderCard(
   alerts: readonly StockAlert[],
   options: {
@@ -45,6 +48,7 @@ function renderCard(
     hasData?: boolean;
     windowDays?: number;
     reorderRecommendations?: ReadonlyMap<string, ReorderRecommendation>;
+    purchasePriorities?: readonly PurchasePriorityItem[];
   } = {},
 ) {
   const {
@@ -53,6 +57,7 @@ function renderCard(
     hasData = true,
     windowDays = 30,
     reorderRecommendations = EMPTY_RECOMMENDATIONS,
+    purchasePriorities = EMPTY_PRIORITIES,
   } = options;
 
   return render(
@@ -64,6 +69,7 @@ function renderCard(
         locale={locale}
         selection={selection}
         reorderRecommendations={reorderRecommendations}
+        purchasePriorities={purchasePriorities}
       />
     </NextIntlClientProvider>,
   );
@@ -268,6 +274,99 @@ describe("kokpit stok uyarısı kartı", () => {
 
       const row = rows()[0]!;
       expect(within(row).getByText(/Suggested reorder: 39 units/)).toBeDefined();
+    });
+  });
+
+  describe("satın alma öncelik rozeti ve etki metni", () => {
+    function priority(
+      overrides: Partial<PurchasePriorityItem> = {},
+    ): PurchasePriorityItem {
+      return {
+        productId: "p1",
+        productName: "Test Ürünü",
+        level: "critical",
+        stock: 5,
+        daysRemaining: 5,
+        dailyVelocity: 2,
+        reorderQuantity: 10,
+        rank: 1,
+        ...overrides,
+      };
+    }
+
+    it("kart sıralama yapmaz — çağıranın verdiği sırayı basar (rütbe rozeti olsa bile)", () => {
+      // Kart, `purchasePriorities` verilse dahi `alerts`i olduğu gibi basar;
+      // sıralama sorumluluğu `orderStockAlertsByPriority`de, kartta değil.
+      renderCard(
+        [
+          alert({ productId: "ikinci", productName: "İkinci", level: "low" }),
+          alert({ productId: "birinci", productName: "Birinci", level: "critical" }),
+        ],
+        {
+          purchasePriorities: [
+            priority({ productId: "birinci", level: "critical", rank: 1 }),
+            priority({ productId: "ikinci", level: "low", rank: 2 }),
+          ],
+        },
+      );
+
+      expect(rows()[0]!.textContent).toContain("İkinci");
+      expect(rows()[1]!.textContent).toContain("Birinci");
+    });
+
+    it("ilk üç rütbeye 'Öncelik #N' rozeti gösterir", () => {
+      renderCard(
+        [
+          alert({
+            productId: "p1",
+            productName: "Bir",
+            level: "negative",
+            daysRemaining: null,
+          }),
+        ],
+        {
+          purchasePriorities: [
+            priority({ productId: "p1", level: "negative", rank: 1 }),
+          ],
+        },
+      );
+
+      expect(within(rows()[0]!).getByText("Öncelik #1")).toBeDefined();
+    });
+
+    it("dördüncü ve sonraki rütbelerde rozet gösterilmez", () => {
+      renderCard([alert({ productId: "p4" })], {
+        purchasePriorities: [priority({ productId: "p4", rank: 4 })],
+      });
+
+      expect(within(rows()[0]!).queryByText(/Öncelik #/)).toBeNull();
+    });
+
+    it("rütbeli satırda 'ertelenirse ne olur' etki metni gösterilir", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })], {
+        purchasePriorities: [priority({ productId: "p1", level: "critical", rank: 1 })],
+      });
+
+      expect(
+        within(rows()[0]!).getByText(tr.purchasePriority.impact.critical),
+      ).toBeDefined();
+    });
+
+    it("purchasePriorities'te bulunmayan (unknown) satırda rozet ya da etki metni gösterilmez", () => {
+      renderCard([alert({ productId: "p1", level: "unknown", daysRemaining: null })], {
+        purchasePriorities: [],
+      });
+
+      const row = rows()[0]!;
+      expect(within(row).queryByText(/Öncelik #/)).toBeNull();
+      expect(within(row).queryByText(tr.purchasePriority.impact.critical)).toBeNull();
+    });
+
+    it("purchasePriorities verilmezse eski davranış değişmez (rozet/etki yok)", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })]);
+
+      const row = rows()[0]!;
+      expect(within(row).queryByText(/Öncelik #/)).toBeNull();
     });
   });
 });
