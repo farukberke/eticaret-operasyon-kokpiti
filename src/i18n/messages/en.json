@@ -245,6 +245,23 @@
       "quantity": {
         "correctStock": "Fix the stock data first.",
         "needsStockData": "Reorder quantity cannot be calculated."
+      },
+      "status": {
+        "pending": "Pending",
+        "done": "Done",
+        "snoozed": "Snoozed",
+        "ignored": "Ignored"
+      },
+      "statusActions": {
+        "done": "Done",
+        "snooze": "Snooze",
+        "ignore": "Ignore"
+      },
+      "statusSummary": {
+        "open": "Open tasks",
+        "done": "Done",
+        "snoozed": "Snoozed",
+        "ignored": "Ignored"
       }
     }
   },

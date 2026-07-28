@@ -371,6 +371,7 @@ export async function CockpitPage({
           purchasePriorities={purchasePriorities}
           leadTimeRisks={leadTimeRisks.byProduct}
           actionPlan={purchaseActionPlan}
+          today={today}
         />
 
         {/* 5 — KAPANIŞ. Günün işi bittikten sonra okunacak not. */}

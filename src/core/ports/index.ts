@@ -8,6 +8,7 @@ import type {
   MissingCostReport,
   ProductCost,
 } from "../domain/cost";
+import type { PurchaseActionStatusRecord } from "../domain/purchase-action-status";
 import type { Signal } from "../domain/signal";
 import type { TaskState } from "../domain/task";
 
@@ -121,4 +122,21 @@ export interface TaskPort {
   save(state: TaskState): Promise<void>;
   /** Görevi kuyruğa geri döndürür (kaydı siler). */
   clear(signalId: string): Promise<void>;
+}
+
+/**
+ * Satın alma eylemi operasyon durumunun kalıcılığı.
+ *
+ * `TaskPort`ın aynı deseni: v1'de `localStorage`, sözleşme yine de veritabanı
+ * şeklinde (async, kimlik bazlı). Anahtar burada `productId` — sinyal değil,
+ * ürün. `reset` yalnızca mock geliştirme kolaylığı içindir (`clearStatuses`),
+ * gerçek adapter'da da bulunabilir ama üretimde çağrılması beklenmez.
+ */
+export interface PurchaseActionStatusPort {
+  /** Kayıtlı tüm satın alma eylemi durumları. */
+  list(): Promise<readonly PurchaseActionStatusRecord[]>;
+  /** Bir ürünün durumunu yazar; varsa üzerine geçer. */
+  save(record: PurchaseActionStatusRecord): Promise<void>;
+  /** Tüm kayıtları temizler — yalnızca test/geliştirme amaçlı. */
+  reset(): Promise<void>;
 }

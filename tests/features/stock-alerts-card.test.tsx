@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import type { IsoDate } from "@/core/domain";
 import type { LeadTimeRisk } from "@/core/services/lead-time-risk";
+import type { PurchaseActionPlanBatch } from "@/core/services/purchase-action-plan";
 import type { PurchasePriorityItem } from "@/core/services/purchase-priority";
 import type { ReorderRecommendation } from "@/core/services/reorder-suggestion";
 import type { StockAlert } from "@/core/services/stock-alerts";
@@ -12,6 +14,8 @@ import { StockAlertsCard } from "@/features/cockpit/stock-alerts-card";
 import type { Locale } from "@/i18n/routing";
 import en from "@/i18n/messages/en.json";
 import tr from "@/i18n/messages/tr.json";
+
+import { installMemoryStorage } from "../data/memory-storage";
 
 /**
  * KOKPİTİN STOK UYARISI KARTI.
@@ -43,6 +47,26 @@ const EMPTY_PRIORITIES: readonly PurchasePriorityItem[] = [];
 
 const EMPTY_LEAD_TIME_RISKS: ReadonlyMap<string, LeadTimeRisk> = new Map();
 
+const TODAY: IsoDate = "2026-07-29";
+
+type ActionPlanItem = PurchaseActionPlanBatch["items"][number];
+
+function actionPlanBatch(
+  items: readonly ActionPlanItem[] = [],
+): PurchaseActionPlanBatch {
+  return {
+    items,
+    summary: {
+      total: items.length,
+      actNowCount: items.filter((item) => item.action === "actNow").length,
+      decideTodayCount: items.filter((item) => item.action === "decideToday").length,
+      planSoonCount: items.filter((item) => item.action === "planSoon").length,
+      completeDataCount: items.filter((item) => item.action === "completeData").length,
+      reviewCount: items.filter((item) => item.action === "review").length,
+    },
+  };
+}
+
 function renderCard(
   alerts: readonly StockAlert[],
   options: {
@@ -53,6 +77,8 @@ function renderCard(
     reorderRecommendations?: ReadonlyMap<string, ReorderRecommendation>;
     purchasePriorities?: readonly PurchasePriorityItem[];
     leadTimeRisks?: ReadonlyMap<string, LeadTimeRisk>;
+    actionPlan?: PurchaseActionPlanBatch;
+    today?: IsoDate;
   } = {},
 ) {
   const {
@@ -63,6 +89,8 @@ function renderCard(
     reorderRecommendations = EMPTY_RECOMMENDATIONS,
     purchasePriorities = EMPTY_PRIORITIES,
     leadTimeRisks = EMPTY_LEAD_TIME_RISKS,
+    actionPlan,
+    today = TODAY,
   } = options;
 
   return render(
@@ -76,14 +104,28 @@ function renderCard(
         reorderRecommendations={reorderRecommendations}
         purchasePriorities={purchasePriorities}
         leadTimeRisks={leadTimeRisks}
+        {...(actionPlan ? { actionPlan } : {})}
+        today={today}
       />
     </NextIntlClientProvider>,
   );
 }
 
+/**
+ * Ürün satırları — özet kutusundaki eylem-türü satırları da `<li>` kullanır
+ * (`actionPlanSummary.rows`), bu yüzden yalnızca `role="listitem"` yeterli
+ * ayırt edici değil. Her ürün satırı her zaman bir CTA bağlantısı taşır,
+ * özet satırları hiç taşımaz — ayrım oradan yapılır.
+ */
 function rows(): HTMLElement[] {
-  return screen.getAllByRole("listitem");
+  return screen
+    .getAllByRole("listitem")
+    .filter((row) => within(row).queryByRole("link") !== null);
 }
+
+beforeEach(() => {
+  installMemoryStorage();
+});
 
 afterEach(cleanup);
 
@@ -484,6 +526,186 @@ describe("kokpit stok uyarısı kartı", () => {
 
       const row = rows()[0]!;
       expect(within(row).getByText(en.stockAlerts.leadTime.dueToday)).toBeDefined();
+    });
+  });
+
+  describe("operasyon durumu (yapıldı/ertele/yoksay)", () => {
+    function actionItem(overrides: Partial<ActionPlanItem> = {}): ActionPlanItem {
+      return {
+        productId: "p1",
+        rank: 1,
+        action: "actNow",
+        recommendedQuantity: null,
+        alertState: "critical",
+        leadTimeState: "late",
+        daysRemaining: 5,
+        orderDecisionDays: -2,
+        shortageGapDays: 2,
+        reason: "leadTimeAlreadyLate",
+        ...overrides,
+      };
+    }
+
+    it("satın alma planındaki üründe durum rozeti ve üç aksiyon düğmesi görünür", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })], {
+        actionPlan: actionPlanBatch([actionItem()]),
+      });
+
+      const row = rows()[0]!;
+      expect(
+        within(row).getByText(tr.stockAlerts.actionPlan.status.pending),
+      ).toBeDefined();
+      expect(
+        within(row).getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.done,
+        }),
+      ).toBeDefined();
+      expect(
+        within(row).getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.snooze,
+        }),
+      ).toBeDefined();
+      expect(
+        within(row).getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.ignore,
+        }),
+      ).toBeDefined();
+    });
+
+    it("planda olmayan (unknown) üründe durum kontrolleri hiç gösterilmez", () => {
+      renderCard([alert({ productId: "p1", level: "unknown", daysRemaining: null })], {
+        actionPlan: actionPlanBatch([]),
+      });
+
+      const row = rows()[0]!;
+      expect(
+        within(row).queryByText(tr.stockAlerts.actionPlan.status.pending),
+      ).toBeNull();
+      expect(
+        within(row).queryByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.done,
+        }),
+      ).toBeNull();
+    });
+
+    it("'Yapıldı' tıklanınca satır varsayılan görünümden gizlenir, özette sayılır", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })], {
+        actionPlan: actionPlanBatch([actionItem()]),
+      });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.done,
+        }),
+      );
+
+      expect(rows()).toHaveLength(0);
+      expect(
+        screen.getByText(
+          new RegExp(`${tr.stockAlerts.actionPlan.statusSummary.done}: 1`),
+        ),
+      ).toBeDefined();
+    });
+
+    it("'Ertele' tıklanınca satır görünmeye devam eder, rozeti 'Ertelendi' olur", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })], {
+        actionPlan: actionPlanBatch([actionItem()]),
+      });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.snooze,
+        }),
+      );
+
+      const row = rows()[0]!;
+      expect(
+        within(row).getByText(tr.stockAlerts.actionPlan.status.snoozed),
+      ).toBeDefined();
+    });
+
+    it("'Yoksay' tıklanınca satır gizlenir, özette sayılır", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })], {
+        actionPlan: actionPlanBatch([actionItem()]),
+      });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.ignore,
+        }),
+      );
+
+      expect(rows()).toHaveLength(0);
+      expect(
+        screen.getByText(
+          new RegExp(`${tr.stockAlerts.actionPlan.statusSummary.ignored}: 1`),
+        ),
+      ).toBeDefined();
+    });
+
+    it("aynı ürün için tek satır render edilir", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })], {
+        actionPlan: actionPlanBatch([actionItem()]),
+      });
+
+      expect(rows().length).toBe(1);
+    });
+
+    it("durum kontrolleri eklenince rütbe, aksiyon rozeti, yeniden sipariş ve tedarik süresi görünümleri değişmez", () => {
+      renderCard(
+        [alert({ productId: "p1", level: "critical", daysRemaining: 5, stock: 5 })],
+        {
+          actionPlan: actionPlanBatch([actionItem({ recommendedQuantity: 24 })]),
+          purchasePriorities: [
+            {
+              productId: "p1",
+              productName: "Test",
+              level: "critical",
+              stock: 5,
+              daysRemaining: 5,
+              dailyVelocity: 2,
+              reorderQuantity: 24,
+              leadTimeStatus: "late",
+              orderDecisionDays: -2,
+              shortageGapDays: 2,
+              rank: 1,
+            },
+          ],
+          reorderRecommendations: new Map([
+            [
+              "p1",
+              {
+                kind: "suggested",
+                quantity: 24,
+                targetStockUnits: 30,
+                dailyVelocity: 2,
+                targetCoverageDays: 15,
+                currentStock: 5,
+              },
+            ],
+          ]),
+          leadTimeRisks: new Map([
+            [
+              "p1",
+              {
+                state: "late",
+                leadTimeDays: 7,
+                daysOfCover: 4,
+                shortageGapDays: 2,
+                orderDecisionDays: -2,
+              },
+            ],
+          ]),
+        },
+      );
+
+      const row = rows()[0]!;
+      expect(within(row).getByText("Öncelik #1")).toBeDefined();
+      expect(
+        within(row).getByText(tr.stockAlerts.actionPlan.action.actNow),
+      ).toBeDefined();
+      expect(within(row).getByText(/Önerilen sipariş: 24 adet/)).toBeDefined();
+      expect(within(row).getByText(/Tedarik süresi: 7 gün/)).toBeDefined();
     });
   });
 });

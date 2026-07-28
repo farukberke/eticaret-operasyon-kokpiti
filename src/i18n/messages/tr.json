@@ -245,6 +245,23 @@
       "quantity": {
         "correctStock": "Önce stok bilgisini düzeltin.",
         "needsStockData": "Sipariş miktarı hesaplanamıyor."
+      },
+      "status": {
+        "pending": "Bekliyor",
+        "done": "Tamamlandı",
+        "snoozed": "Ertelendi",
+        "ignored": "Yoksayıldı"
+      },
+      "statusActions": {
+        "done": "Yapıldı",
+        "snooze": "Ertele",
+        "ignore": "Yoksay"
+      },
+      "statusSummary": {
+        "open": "Açık görevler",
+        "done": "Tamamlandı",
+        "snoozed": "Ertelendi",
+        "ignored": "Yoksayıldı"
       }
     }
   },

@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 
+import type { IsoDate } from "@/core/domain";
 import type { LeadTimeRisk } from "@/core/services/lead-time-risk";
 import type { PurchaseActionPlanBatch } from "@/core/services/purchase-action-plan";
 import type { PurchasePriorityItem } from "@/core/services/purchase-priority";
@@ -30,6 +31,10 @@ import {
   toPurchaseActionPlanRowViews,
   toPurchaseActionPlanSummaryView,
 } from "./purchase-action-plan-view";
+import { buildPurchaseActionStatusTexts } from "./purchase-action-status-view";
+import { PurchaseActionStatusProvider } from "./purchase-action-status-provider.client";
+import { PurchaseActionStatusRow } from "./purchase-action-status-row.client";
+import { PurchaseActionStatusSummary } from "./purchase-action-status-summary.client";
 import {
   buildPurchasePriorityTexts,
   toPurchasePriorityViews,
@@ -93,6 +98,7 @@ export function StockAlertsCard({
   purchasePriorities = NO_PRIORITIES,
   leadTimeRisks = NO_LEAD_TIME_RISKS,
   actionPlan = NO_ACTION_PLAN,
+  today,
 }: {
   /**
    * Gösterim sırası — kart bu sırayı **değiştirmez**. Satın alma öncelik
@@ -130,6 +136,12 @@ export function StockAlertsCard({
    * davranışıyla aynı şekilde çalışmaya devam eder.
    */
   actionPlan?: PurchaseActionPlanBatch;
+  /**
+   * Kullanıcının satın alma eylemi kararlarının (`done`/`snoozed`/`ignored`)
+   * kaydedileceği gün — `PurchaseActionStatusRecord.updatedAt`. Sinyal görev
+   * durumunun (`TaskState`) `today`sinin aynısı, ayrı bir tarih hesabı değil.
+   */
+  today: IsoDate;
 }) {
   const t = useTranslations("stockAlerts");
   const products = useTranslations("products");
@@ -166,6 +178,8 @@ export function StockAlertsCard({
     locale,
     actionPlanTexts,
   );
+  const actionStatusTexts = buildPurchaseActionStatusTexts(t);
+  const actionPlanProductIds = actionPlan.items.map((item) => item.productId);
 
   const urgent = views[0]?.state === "negative" || views[0]?.state === "critical";
 
@@ -181,126 +195,144 @@ export function StockAlertsCard({
       ) : views.length === 0 ? (
         <EmptyState title={t("empty")} description={t("emptyDescription")} />
       ) : (
-        <div className="flex flex-col gap-2">
-          {/*
-            BUGÜNÜN SATIN ALMA PLANI — kompakt özet. Sayılar
-            `buildPurchaseActionPlan`in tek geçişte hazırladığı `summary`den
-            gelir; burada `filter`/toplama yapılmaz. Plan boşsa (yalnızca
-            `unknown` durumlu ürünler varsa) sakin, iddiasız bir cümle
-            gösterilir — kart bozulmaz, mevcut boş durumla çelişmez.
-          */}
-          <div className="border-border bg-surface-muted rounded-lg border p-3">
-            <p className="text-fg text-xs font-semibold">{actionPlanSummary.title}</p>
-            {actionPlanSummary.hasActions ? (
-              <ul className="text-fg-muted mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
-                {actionPlanSummary.rows.map((row) => (
-                  <li key={row.action}>{row.line}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-fg-muted mt-1 text-xs">
-                {actionPlanSummary.emptyText}
-              </p>
-            )}
-          </div>
+        <PurchaseActionStatusProvider today={today}>
+          <div className="flex flex-col gap-2">
+            {/*
+              BUGÜNÜN SATIN ALMA PLANI — kompakt özet. Sayılar
+              `buildPurchaseActionPlan`in tek geçişte hazırladığı `summary`den
+              gelir; burada `filter`/toplama yapılmaz. Plan boşsa (yalnızca
+              `unknown` durumlu ürünler varsa) sakin, iddiasız bir cümle
+              gösterilir — kart bozulmaz, mevcut boş durumla çelişmez.
+            */}
+            <div className="border-border bg-surface-muted rounded-lg border p-3">
+              <p className="text-fg text-xs font-semibold">{actionPlanSummary.title}</p>
+              {actionPlanSummary.hasActions ? (
+                <ul className="text-fg-muted mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+                  {actionPlanSummary.rows.map((row) => (
+                    <li key={row.action}>{row.line}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-fg-muted mt-1 text-xs">
+                  {actionPlanSummary.emptyText}
+                </p>
+              )}
+              {/*
+                Operasyon durumu özeti — kullanıcının kararlarının
+                (yapıldı/ertelendi/yoksayıldı) dağılımı. Yukarıdaki özetin
+                yerine geçmez, yanına eklenir: biri "ne öneriliyor" biri
+                "kullanıcı ne yaptı" sorusuna cevap verir.
+              */}
+              <PurchaseActionStatusSummary
+                productIds={actionPlanProductIds}
+                texts={actionStatusTexts}
+              />
+            </div>
 
-          <ul className="flex flex-col gap-2">
-            {views.map((view) => {
-              const priorityView = priorityViews.get(view.productId);
-              const leadTimeView = leadTimeViews.get(view.productId);
-              const actionView = actionPlanRowViews.get(view.productId);
+            <ul className="flex flex-col gap-2">
+              {views.map((view) => {
+                const priorityView = priorityViews.get(view.productId);
+                const leadTimeView = leadTimeViews.get(view.productId);
+                const actionView = actionPlanRowViews.get(view.productId);
 
-              return (
-                <li
-                  key={view.productId}
-                  className="border-border bg-surface rounded-lg border p-3"
-                >
-                  <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-fg truncate text-sm font-medium">
-                          {view.productName}
+                return (
+                  <PurchaseActionStatusRow
+                    key={view.productId}
+                    productId={view.productId}
+                    hasAction={actionView !== undefined}
+                    texts={actionStatusTexts}
+                  >
+                    <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-fg truncate text-sm font-medium">
+                            {view.productName}
+                          </p>
+                          <Badge tone={view.tone}>{view.stateLabel}</Badge>
+                          {priorityView?.rankLabel ? (
+                            <Badge tone="accent">{priorityView.rankLabel}</Badge>
+                          ) : null}
+                          {actionView ? (
+                            <Badge tone={actionView.tone}>
+                              {actionView.actionLabel}
+                            </Badge>
+                          ) : null}
+                        </div>
+
+                        <div className="text-fg-muted mt-1 flex flex-wrap gap-x-2 text-xs">
+                          <span>{view.stockLabel}</span>
+                          {/* Ölçülemeyen durumda kalan gün yerine durum kelimesi
+                            tekrar edilir — ikinci bir "ölçülemedi" cümlesi
+                            icat edilmez. */}
+                          <span>{view.daysLabel ?? view.stateLabel}</span>
+                        </div>
+
+                        <p className="text-fg-muted mt-1.5 text-sm">{view.reason}</p>
+                        <p className="text-fg mt-1 text-sm font-medium">
+                          {view.action}
                         </p>
-                        <Badge tone={view.tone}>{view.stateLabel}</Badge>
-                        {priorityView?.rankLabel ? (
-                          <Badge tone="accent">{priorityView.rankLabel}</Badge>
+                        {/* Satın alma öncelik motorunun cevabı: "ertelenirse ne
+                          olur?" — negative/critical/low dışındaki (unknown)
+                          satırlarda `priorityView` yok, bu yüzden gösterilmez. */}
+                        {priorityView ? (
+                          <p className="text-fg-muted mt-1 text-xs">
+                            {priorityView.impact}
+                          </p>
                         ) : null}
-                        {actionView ? (
-                          <Badge tone={actionView.tone}>{actionView.actionLabel}</Badge>
+
+                        {/* Tedarik süresi riski: "ne kadar acil?" sorusunun
+                          cevabı. `safe`/ölçülemeyen durumlarda `leadTimeView`
+                          `visible: false` döner ve hiçbir şey basılmaz. */}
+                        {leadTimeView?.visible ? (
+                          <div className="mt-1">
+                            <p
+                              className={`text-xs font-medium ${LEAD_TIME_TEXT_TONE[leadTimeView.tone]}`}
+                            >
+                              {leadTimeView.message}
+                            </p>
+                            {leadTimeView.detail ? (
+                              <p className="text-fg-subtle text-xs">
+                                {leadTimeView.detail}
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {view.reorderQuantityLabel ? (
+                          <div className="mt-1">
+                            <p className="text-fg text-sm font-medium">
+                              {view.reorderQuantityLabel}
+                            </p>
+                            {view.reorderBasisLabel ? (
+                              <p className="text-fg-subtle text-xs">
+                                {view.reorderBasisLabel}
+                              </p>
+                            ) : null}
+                          </div>
                         ) : null}
                       </div>
 
-                      <div className="text-fg-muted mt-1 flex flex-wrap gap-x-2 text-xs">
-                        <span>{view.stockLabel}</span>
-                        {/* Ölçülemeyen durumda kalan gün yerine durum kelimesi
-                          tekrar edilir — ikinci bir "ölçülemedi" cümlesi
-                          icat edilmez. */}
-                        <span>{view.daysLabel ?? view.stateLabel}</span>
-                      </div>
-
-                      <p className="text-fg-muted mt-1.5 text-sm">{view.reason}</p>
-                      <p className="text-fg mt-1 text-sm font-medium">{view.action}</p>
-                      {/* Satın alma öncelik motorunun cevabı: "ertelenirse ne
-                        olur?" — negative/critical/low dışındaki (unknown)
-                        satırlarda `priorityView` yok, bu yüzden gösterilmez. */}
-                      {priorityView ? (
-                        <p className="text-fg-muted mt-1 text-xs">
-                          {priorityView.impact}
-                        </p>
-                      ) : null}
-
-                      {/* Tedarik süresi riski: "ne kadar acil?" sorusunun
-                        cevabı. `safe`/ölçülemeyen durumlarda `leadTimeView`
-                        `visible: false` döner ve hiçbir şey basılmaz. */}
-                      {leadTimeView?.visible ? (
-                        <div className="mt-1">
-                          <p
-                            className={`text-xs font-medium ${LEAD_TIME_TEXT_TONE[leadTimeView.tone]}`}
-                          >
-                            {leadTimeView.message}
-                          </p>
-                          {leadTimeView.detail ? (
-                            <p className="text-fg-subtle text-xs">
-                              {leadTimeView.detail}
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : null}
-
-                      {view.reorderQuantityLabel ? (
-                        <div className="mt-1">
-                          <p className="text-fg text-sm font-medium">
-                            {view.reorderQuantityLabel}
-                          </p>
-                          {view.reorderBasisLabel ? (
-                            <p className="text-fg-subtle text-xs">
-                              {view.reorderBasisLabel}
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : null}
+                      <Button asChild size="sm">
+                        <Link
+                          href={withAnalysisQuery(
+                            productFocusHref(view.productId),
+                            selection,
+                          )}
+                        >
+                          {t("cta")}
+                        </Link>
+                      </Button>
                     </div>
+                  </PurchaseActionStatusRow>
+                );
+              })}
+            </ul>
 
-                    <Button asChild size="sm">
-                      <Link
-                        href={withAnalysisQuery(
-                          productFocusHref(view.productId),
-                          selection,
-                        )}
-                      >
-                        {t("cta")}
-                      </Link>
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
-          <p className="text-fg-subtle px-1 text-xs">
-            {coverageTexts.hint(windowDays)}
-          </p>
-        </div>
+            <p className="text-fg-subtle px-1 text-xs">
+              {coverageTexts.hint(windowDays)}
+            </p>
+          </div>
+        </PurchaseActionStatusProvider>
       )}
     </SectionCard>
   );
