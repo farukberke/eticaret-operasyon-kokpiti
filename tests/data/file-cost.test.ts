@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { lira, type ProductCost } from "@/core/domain";
+import { basisPoints, lira, type CostDefault, type ProductCost } from "@/core/domain";
 import type { CostPort } from "@/core/ports";
 
 /**
@@ -92,5 +92,152 @@ describe("Dosya maliyet adapter'ı", () => {
     await adapter.removeProductCost("sneaker", "2026-07-01");
     const ids = (await adapter.load()).products.map((entry) => entry.productId);
     expect(ids).not.toContain("sneaker");
+  });
+});
+
+/**
+ * VARSAYILAN MALİYET AYARLARI — yazma tarafı.
+ *
+ * Korunan davranış: varsayılan yazmak **ürüne özel kayıtlara dokunmaz**.
+ * Buradaki bir hata, kullanıcının tek tek girdiği alış maliyetlerini bir
+ * komisyon ayarı yüzünden kaybetmesi olurdu.
+ */
+describe("Varsayılan kayıtları", () => {
+  const storeDefault: CostDefault = {
+    scope: { kind: "store" },
+    effectiveFrom: "2026-07-01",
+    commissionRate: basisPoints(15),
+    shippingCost: lira(34.9),
+  };
+
+  it("mağaza varsayılanını yazar ve geri okur", async () => {
+    await adapter.saveDefault(storeDefault);
+
+    const { defaults } = await adapter.load();
+    expect(defaults).toHaveLength(1);
+    expect(defaults[0]!.scope).toEqual({ kind: "store" });
+    expect(defaults[0]!.commissionRate).toBe(basisPoints(15));
+  });
+
+  it("aynı kapsam ve tarihi günceller, çoğaltmaz", async () => {
+    await adapter.saveDefault({ ...storeDefault, commissionRate: basisPoints(18) });
+
+    const { defaults } = await adapter.load();
+    expect(defaults).toHaveLength(1);
+    expect(defaults[0]!.commissionRate).toBe(basisPoints(18));
+  });
+
+  it("aynı kapsamın farklı tarihli kaydı ayrı satır olarak durur", async () => {
+    // Tarihsel ayar: eski siparişler eski varsayılanla hesaplanmaya devam eder.
+    await adapter.saveDefault({
+      ...storeDefault,
+      effectiveFrom: "2026-08-01",
+      commissionRate: basisPoints(20),
+    });
+
+    const { defaults } = await adapter.load();
+    expect(defaults).toHaveLength(2);
+  });
+
+  it("kategori varsayılanı mağazanınkinden ayrı yaşar", async () => {
+    await adapter.saveDefault({
+      scope: { kind: "category", category: "Elektronik" },
+      effectiveFrom: "2026-07-01",
+      commissionRate: basisPoints(11),
+    });
+
+    const { defaults } = await adapter.load();
+    const store = defaults.filter((entry) => entry.scope.kind === "store");
+    const category = defaults.filter((entry) => entry.scope.kind === "category");
+
+    expect(store).toHaveLength(2);
+    expect(category).toHaveLength(1);
+  });
+
+  it("varsayılan yazmak ürüne özel maliyetlere dokunmaz", async () => {
+    const before = (await adapter.load()).products;
+
+    await adapter.saveDefault({
+      scope: { kind: "store" },
+      effectiveFrom: "2026-09-01",
+      commissionRate: basisPoints(12),
+    });
+
+    expect((await adapter.load()).products).toEqual(before);
+  });
+
+  it("boş alanlar 'tanımsız' olarak kalır, sıfıra dönmez", async () => {
+    // Kargosu yazılmayan bir varsayılan, kargoyu sıfırlamaz — zincir aşağı akar.
+    await adapter.saveDefault({
+      scope: { kind: "category", category: "Giyim" },
+      effectiveFrom: "2026-07-01",
+      commissionRate: basisPoints(9),
+    });
+
+    const entry = (await adapter.load()).defaults.find(
+      (item) => item.scope.kind === "category" && item.scope.category === "Giyim",
+    );
+    expect(entry?.shippingCost).toBeUndefined();
+    expect(entry?.packagingPerUnit).toBeUndefined();
+  });
+});
+
+describe("Tohumlanan ve kullanıcı varsayılanlarının birleşmesi", () => {
+  it("aynı kapsam ve tarihte kullanıcının kaydı kazanır", async () => {
+    const { mergeCostTables } = await import("@/data/adapters/local/file-cost.adapter");
+
+    const seed = {
+      products: [],
+      defaults: [
+        {
+          scope: { kind: "store" } as const,
+          effectiveFrom: "2026-01-01",
+          commissionRate: basisPoints(15),
+        },
+      ],
+    };
+    const saved = {
+      products: [],
+      defaults: [
+        {
+          scope: { kind: "store" } as const,
+          effectiveFrom: "2026-01-01",
+          commissionRate: basisPoints(22),
+        },
+      ],
+    };
+
+    const merged = mergeCostTables(seed, saved);
+    expect(merged.defaults).toHaveLength(1);
+    expect(merged.defaults[0]!.commissionRate).toBe(basisPoints(22));
+  });
+
+  it("farklı tarihli tohum kaydı korunur — geçmiş kâr değişmez", async () => {
+    const { mergeCostTables } = await import("@/data/adapters/local/file-cost.adapter");
+
+    const merged = mergeCostTables(
+      {
+        products: [],
+        defaults: [
+          {
+            scope: { kind: "store" },
+            effectiveFrom: "2026-01-01",
+            commissionRate: basisPoints(15),
+          },
+        ],
+      },
+      {
+        products: [],
+        defaults: [
+          {
+            scope: { kind: "store" },
+            effectiveFrom: "2026-07-01",
+            commissionRate: basisPoints(22),
+          },
+        ],
+      },
+    );
+
+    expect(merged.defaults).toHaveLength(2);
   });
 });

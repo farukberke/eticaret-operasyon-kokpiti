@@ -32,7 +32,13 @@ export interface CostEditorRow {
   readonly missing: boolean;
 }
 
-function Field({
+/**
+ * Maliyet formlarının ortak alanı.
+ *
+ * Varsayılan ayarları formu da bunu kullanır: iki ekranda iki farklı görünen
+ * girdi alanı, kullanıcıya iki farklı sistemle uğraştığını hissettirirdi.
+ */
+export function Field({
   label,
   hint,
   value,

@@ -3,6 +3,7 @@ import {
   basisPoints,
   type BasisPoints,
   type CostDefault,
+  type CostScope,
   type CostTable,
   type IsoDate,
   type Money,
@@ -65,6 +66,35 @@ function findEffective<T extends { effectiveFrom: IsoDate }>(
     }
   }
   return found;
+}
+
+/** İki kapsam aynı şeyi mi gösteriyor — `defaultKeyOf` ile aynı kimlik anlayışı. */
+function sameScope(a: CostScope, b: CostScope): boolean {
+  if (a.kind === "store") return b.kind === "store";
+  return b.kind === "category" && a.category === b.category;
+}
+
+/**
+ * Bir kapsamın belirtilen tarihte **yürürlükteki** varsayılan kaydı.
+ *
+ * Çözümleyicinin kendisi ürün merkezlidir (`resolve(productId, date)`);
+ * varsayılan ayarları ekranı ise "mağaza için şu an ne geçerli" diye sorar.
+ * Bu fonksiyonun burada durması bilinçli: **yürürlük kuralı tek yerde kalsın.**
+ * Ayrı bir dosyada kopyalansaydı, ayarlar ekranı ile kâr hesabı zamanla farklı
+ * kayıtları yürürlükte sanabilirdi — kullanıcı ekranda %15 görürken kârın
+ * %11 ile hesaplandığı bir panelden daha kötüsü yok.
+ *
+ * Çözümleme zincirine karışmaz, yalnızca okur.
+ */
+export function findEffectiveDefault(
+  defaults: readonly CostDefault[],
+  scope: CostScope,
+  date: IsoDate,
+): CostDefault | undefined {
+  const matching = defaults
+    .filter((entry) => sameScope(entry.scope, scope))
+    .sort(byEffectiveFromDesc);
+  return findEffective(matching, date);
 }
 
 export function createCostResolver(

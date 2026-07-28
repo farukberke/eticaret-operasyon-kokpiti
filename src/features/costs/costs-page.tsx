@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 
 import { toRatio } from "@/core/domain";
 import { DEFAULT_RULES } from "@/core/services/rules.config";
-import { container, defaultRange } from "@/data/container";
+import { container, defaultRange, loadCostSource } from "@/data/container";
 import { EMPTY, formatMoney, formatPercent, formatShortDate } from "@/lib/format";
 import type { Locale } from "@/i18n/routing";
 import { Card } from "@/ui/primitives/card";
@@ -11,9 +11,11 @@ import { EmptyState } from "@/ui/patterns/empty-state";
 import { PageHeader } from "@/ui/patterns/page-header";
 import { SectionCard } from "@/ui/patterns/section-card";
 
+import { CostDefaults } from "./cost-defaults.client";
 import { CostImport } from "./cost-import.client";
 import { CostList, type CostListRow } from "./cost-list.client";
 import { MissingCostPanel } from "./missing-cost-panel.client";
+import { buildCostDefaultsView } from "./default-view";
 import { buildMissingCostRows } from "./missing-cost-view";
 import { templateCsv } from "./import-actions";
 
@@ -26,15 +28,26 @@ import { templateCsv } from "./import-actions";
  */
 export async function CostsPage({ locale }: { locale: Locale }) {
   const range = defaultRange();
-  const [performance, profit, missing, template, t] = await Promise.all([
+  const [performance, profit, missing, template, costSource, t] = await Promise.all([
     container.products.getPerformance(range),
     container.profit.getSummary(range),
     container.costInsights.getMissingCosts(range),
     templateCsv(),
+    // Varsayılan ayarları kâr hesabının gördüğü **aynı** tablodan okunur:
+    // kullanıcı ekranda %15 görürken kârın %11 ile hesaplandığı bir panel
+    // güvenilemez olurdu.
+    loadCostSource(),
     getTranslations("costs"),
   ]);
 
   const today = container.clock.today();
+
+  const defaultsView = buildCostDefaultsView({
+    defaults: costSource.costs.defaults,
+    products: costSource.products,
+    today,
+    locale,
+  });
 
   const rows: CostListRow[] = [...performance]
     // Eksik olanlar üstte: kullanıcının burada yapacağı iş onlar.
@@ -125,6 +138,16 @@ export async function CostsPage({ locale }: { locale: Locale }) {
           ) : (
             <MissingCostPanel rows={missingRows} today={today} remaining={remaining} />
           )}
+        </SectionCard>
+
+        {/*
+          Varsayılanlar listeden önce: "yüzlerce ürüne tek tek girme" işini
+          burası bitiriyor. Kullanıcının aşağıdaki tek tek düzenleme listesine
+          inmeden önce bu bölümü görmesi, aynı komisyonu yüz kez yazmasını
+          engelleyen tek şey.
+        */}
+        <SectionCard title={t("defaultsTitle")} description={t("defaultsDescription")}>
+          <CostDefaults view={defaultsView} today={today} />
         </SectionCard>
 
         <CostImport template={template} />
