@@ -265,6 +265,24 @@
       }
     }
   },
+  "morningBrief": {
+    "title": "Sabah Özeti",
+    "subtitle": "Operasyon Özeti",
+    "prioritiesTitle": "Bugünün Öncelikleri",
+    "todayTasksLabel": "Bugün yapılacaklar",
+    "severity": {
+      "critical": "Kritik",
+      "normal": "Normal"
+    },
+    "allClear": "Bugün satın alma tarafında öncelikli bir aksiyon yok.",
+    "item": {
+      "activeActions": "Bugün {count} satın alma aksiyonu öncelikli.",
+      "criticalStock": "{count} ürün kritik stok seviyesinde.",
+      "leadTimeRisk": "{count} ürün tedarik süresi riski taşıyor.",
+      "completedActions": "{count} görev tamamlandı.",
+      "snoozedActions": "{count} görev ertelendi."
+    }
+  },
   "purchasePriority": {
     "rankBadge": "Öncelik #{rank}",
     "impact": {

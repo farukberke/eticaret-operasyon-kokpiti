@@ -265,6 +265,24 @@
       }
     }
   },
+  "morningBrief": {
+    "title": "Morning Brief",
+    "subtitle": "Operations Summary",
+    "prioritiesTitle": "Today's Priorities",
+    "todayTasksLabel": "Today's tasks",
+    "severity": {
+      "critical": "Critical",
+      "normal": "Normal"
+    },
+    "allClear": "No priority purchasing action today.",
+    "item": {
+      "activeActions": "{count} purchasing actions are priority today.",
+      "criticalStock": "{count} products are at critical stock level.",
+      "leadTimeRisk": "{count} products carry lead time risk.",
+      "completedActions": "{count} tasks completed.",
+      "snoozedActions": "{count} tasks snoozed."
+    }
+  },
   "purchasePriority": {
     "rankBadge": "Priority #{rank}",
     "impact": {

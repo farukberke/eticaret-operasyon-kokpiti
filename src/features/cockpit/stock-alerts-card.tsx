@@ -26,6 +26,8 @@ import { Button } from "@/ui/primitives/button";
 import { EmptyState } from "@/ui/patterns/empty-state";
 import { SectionCard } from "@/ui/patterns/section-card";
 
+import { buildMorningBriefTexts } from "./morning-brief-view";
+import { MorningBriefSummary } from "./morning-brief-summary.client";
 import {
   buildPurchaseActionPlanTexts,
   toPurchaseActionPlanRowViews,
@@ -146,6 +148,7 @@ export function StockAlertsCard({
   const t = useTranslations("stockAlerts");
   const products = useTranslations("products");
   const priority = useTranslations("purchasePriority");
+  const morningBrief = useTranslations("morningBrief");
 
   const coverageTexts = buildStockCoverageTexts(products);
   const texts = buildStockAlertTexts(t, coverageTexts);
@@ -180,6 +183,7 @@ export function StockAlertsCard({
   );
   const actionStatusTexts = buildPurchaseActionStatusTexts(t);
   const actionPlanProductIds = actionPlan.items.map((item) => item.productId);
+  const morningBriefTexts = buildMorningBriefTexts(morningBrief);
 
   const urgent = views[0]?.state === "negative" || views[0]?.state === "critical";
 
@@ -197,6 +201,18 @@ export function StockAlertsCard({
       ) : (
         <PurchaseActionStatusProvider today={today}>
           <div className="flex flex-col gap-2">
+            {/*
+              SABAH ÖZETİ — planın 10-15 saniyelik özeti. Aşağıdaki plan
+              kutusunun yerine geçmez, önüne geçer: "bugün ne durumdayım"
+              sorusunun ilk cevabı burada, ayrıntı aşağıda.
+            */}
+            <MorningBriefSummary
+              actionPlan={actionPlan}
+              locale={locale}
+              texts={morningBriefTexts}
+              actionPlanRowViews={actionPlanRowViews}
+            />
+
             {/*
               BUGÜNÜN SATIN ALMA PLANI — kompakt özet. Sayılar
               `buildPurchaseActionPlan`in tek geçişte hazırladığı `summary`den

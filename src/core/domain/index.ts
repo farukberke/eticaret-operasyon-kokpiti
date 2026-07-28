@@ -8,6 +8,7 @@ export * from "./dataset";
 export * from "./date-range";
 export * from "./metrics";
 export * from "./money";
+export * from "./morning-brief";
 export * from "./order";
 export * from "./priority";
 export * from "./product";

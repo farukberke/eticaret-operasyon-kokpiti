@@ -708,4 +708,88 @@ describe("kokpit stok uyarısı kartı", () => {
       expect(within(row).getByText(/Tedarik süresi: 7 gün/)).toBeDefined();
     });
   });
+
+  describe("Sabah Özeti kartı", () => {
+    it("Sabah Özeti kartı görünür, mevcut satın alma planı bozulmadan yanında durur", () => {
+      renderCard(
+        [alert({ productId: "p1", level: "critical", daysRemaining: 5, stock: 5 })],
+        {
+          actionPlan: actionPlanBatch([
+            {
+              productId: "p1",
+              rank: 1,
+              action: "actNow",
+              recommendedQuantity: 24,
+              alertState: "critical",
+              leadTimeState: "late",
+              daysRemaining: 5,
+              orderDecisionDays: -2,
+              shortageGapDays: 2,
+              reason: "leadTimeAlreadyLate",
+            },
+          ]),
+          purchasePriorities: [
+            {
+              productId: "p1",
+              productName: "Test",
+              level: "critical",
+              stock: 5,
+              daysRemaining: 5,
+              dailyVelocity: 2,
+              reorderQuantity: 24,
+              leadTimeStatus: "late",
+              orderDecisionDays: -2,
+              shortageGapDays: 2,
+              rank: 1,
+            },
+          ],
+          reorderRecommendations: new Map([
+            [
+              "p1",
+              {
+                kind: "suggested",
+                quantity: 24,
+                targetStockUnits: 30,
+                dailyVelocity: 2,
+                targetCoverageDays: 15,
+                currentStock: 5,
+              },
+            ],
+          ]),
+          leadTimeRisks: new Map([
+            [
+              "p1",
+              {
+                state: "late",
+                leadTimeDays: 7,
+                daysOfCover: 4,
+                shortageGapDays: 2,
+                orderDecisionDays: -2,
+              },
+            ],
+          ]),
+        },
+      );
+
+      expect(screen.getByText(tr.morningBrief.title)).toBeDefined();
+
+      // Mevcut satır (rütbe, aksiyon rozeti, miktar, tedarik süresi) değişmez.
+      const row = rows()[0]!;
+      expect(within(row).getByText("Öncelik #1")).toBeDefined();
+      expect(
+        within(row).getByText(tr.stockAlerts.actionPlan.action.actNow),
+      ).toBeDefined();
+      expect(within(row).getByText(/Önerilen sipariş: 24 adet/)).toBeDefined();
+      expect(within(row).getByText(/Tedarik süresi: 7 gün/)).toBeDefined();
+
+      // Ürün yalnızca bir kez render edilir.
+      expect(rows().length).toBe(1);
+    });
+
+    it("actionPlan verilmezse (eski davranış) Sabah Özeti sakin metinle görünür", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })]);
+      expect(screen.getByText(tr.morningBrief.title)).toBeDefined();
+      expect(screen.getByText(tr.morningBrief.allClear)).toBeDefined();
+    });
+  });
 });
