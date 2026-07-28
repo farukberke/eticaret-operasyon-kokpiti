@@ -44,6 +44,17 @@
     "invalidRange": "The start date can't be later than the end date.",
     "windowNote": "Based on {range}."
   },
+  "comparison": {
+    "increased": "Up {amount} vs previous period",
+    "decreased": "Down {amount} vs previous period",
+    "unchanged": "No change",
+    "new": "New",
+    "noPreviousData": "No data in the previous period",
+    "notComparable": "Not comparable",
+    "previousValue": "was {value}",
+    "previousWindow": "previous {range}",
+    "separator": " · "
+  },
   "cockpit": {
     "greeting": "Good morning",
     "todayIs": "{date}",
@@ -65,7 +76,9 @@
     "missingCostCta": "Complete",
     "missingCostMore": "{count} more products",
     "missingCostDone": "Great!",
-    "missingCostDoneHint": "Purchase costs are filled in for every product."
+    "missingCostDoneHint": "Purchase costs are filled in for every product.",
+    "riskTotal": "Total at risk",
+    "opportunityTotal": "Total upside"
   },
   "kpi": {
     "revenue": "Revenue",

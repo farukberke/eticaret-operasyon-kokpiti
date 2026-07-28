@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 import { Sparkline } from "../charts/sparkline";
-import { TrendDelta, type Direction } from "./trend-delta";
+import { TrendDelta, type DeltaMeaning, type Direction } from "./trend-delta";
 
 /**
  * KPI kartı — kokpitteki tüm sayılar bunu kullanır.
@@ -19,7 +19,7 @@ export interface StatTileProps {
   readonly delta?: {
     readonly direction: Direction;
     readonly label: string;
-    readonly higherIsBetter: boolean;
+    readonly higherIsBetter: DeltaMeaning;
     readonly srLabel?: string;
   };
   /** Değişimin neye göre olduğu: "önceki 30 güne göre". */

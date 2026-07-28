@@ -13,14 +13,22 @@ import { cn } from "@/lib/cn";
  * 2. **"Yukarı" her zaman iyi değildir.** İade oranı veya reklam maliyeti
  *    yükselmesi kötüdür. `higherIsBetter` bu yüzden zorunlu bir karar noktası;
  *    varsayılan vermek, bir gün sessizce yanlış rengi basardı.
+ *
+ * 3. **Bazı ölçüler ne iyi ne kötüdür.** Fırsat toplamının artması "daha çok
+ *    kazanç fırsatı" da olabilir "işlerin bozulmaya başladığı" da; anlamı
+ *    bağlam belirler. `"neutral"` bu durumda renk yerine yalnızca ok ve metin
+ *    bırakır — yeşil basmak, kullanıcıya olmayan bir yargıyı satmak olurdu.
  */
 export type Direction = "up" | "down" | "flat";
+
+/** `true`/`false` bir yargıdır; `"neutral"` yargıda bulunmamaktır. */
+export type DeltaMeaning = boolean | "neutral";
 
 export interface TrendDeltaProps {
   readonly direction: Direction;
   /** Biçimlendirilmiş değişim metni ("+%12,4"). Hesaplanamıyorsa "—". */
   readonly label: string;
-  readonly higherIsBetter: boolean;
+  readonly higherIsBetter: DeltaMeaning;
   /** Ekran okuyucu için tam cümle: "geçen döneme göre %12,4 arttı". */
   readonly srLabel?: string;
   readonly className?: string;
@@ -28,8 +36,8 @@ export interface TrendDeltaProps {
 
 const ICONS = { up: ArrowUp, down: ArrowDown, flat: ArrowRight } as const;
 
-function toneOf(direction: Direction, higherIsBetter: boolean): string {
-  if (direction === "flat") return "text-fg-muted";
+function toneOf(direction: Direction, higherIsBetter: DeltaMeaning): string {
+  if (direction === "flat" || higherIsBetter === "neutral") return "text-fg-muted";
   const isGood = direction === "up" ? higherIsBetter : !higherIsBetter;
   return isGood ? "text-success" : "text-danger";
 }

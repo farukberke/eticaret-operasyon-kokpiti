@@ -2,9 +2,15 @@ import { ArrowRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { selectionOf } from "@/core/services/analysis-window";
+import {
+  buildPeriodComparison,
+  comparisonRangeOf,
+  signalsAtStake,
+} from "@/core/services/period-comparison";
 import { container } from "@/data/container";
 import { Link } from "@/i18n/navigation";
 import { CURRENCY, type Locale } from "@/i18n/routing";
+import { formatMoney } from "@/lib/format";
 import { AnalysisPicker } from "@/features/analysis/analysis-picker.client";
 import {
   readAnalysisWindow,
@@ -19,6 +25,8 @@ import { SectionCard } from "@/ui/patterns/section-card";
 import { TaskStateProvider } from "@/features/tasks/task-state-provider.client";
 
 import { CockpitQueue } from "./cockpit-queue.client";
+import { ComparisonStat } from "./comparison-stat";
+import { buildComparisonViews } from "./comparison-view";
 import { ContextStrip } from "./context-strip";
 import { DayLedger } from "./day-ledger.client";
 import { MissingCostCard } from "./missing-cost-card";
@@ -89,23 +97,70 @@ export async function CockpitPage({
   const range = analysisWindow.range;
   const selection = selectionOf(analysisWindow);
 
-  // Portlar birbirinden bağımsız; hepsi paralel çekilir.
-  const [priorities, risks, opportunities, sales, profit, missingCosts] =
-    await Promise.all([
-      container.priorities.getPriorities(range),
-      container.signals.getRisks(range),
-      container.signals.getOpportunities(range),
-      container.sales.getSummary(range),
-      container.profit.getSummary(range),
-      // Maliyet ekranıyla **aynı** port, aynı aralık: iki ekran aynı kuyruğu
-      // görsün diye rapor burada yeniden hesaplanmıyor.
-      container.costInsights.getMissingCosts(range),
-    ]);
+  /**
+   * Karşılaştırma penceresi seçili pencereden **türetilir**, ayrıca seçilmez:
+   * adres çubuğuna ikinci bir tarih aralığı yazmak, kullanıcıya cevabını
+   * bilmediği bir soru sormak ve iki aralığın kayması riskini almak olurdu.
+   */
+  const previousRange = comparisonRangeOf(range);
 
-  const [t, common] = await Promise.all([
+  /**
+   * Portlar birbirinden bağımsız; hepsi paralel çekilir.
+   *
+   * Önceki dönemin iki çağrısı (risk + fırsat) **tek bir analiz bağlamı**
+   * kurar: adapter bağlamı aralık anahtarıyla istek başına önbelleğe alıyor.
+   * Net kâr ve ciro için üçüncü bir çağrı yok — `SalesSummary` ve
+   * `ProfitSummary` önceki dönemin toplamlarını trend alanlarında zaten
+   * taşıyor.
+   */
+  const [
+    priorities,
+    risks,
+    opportunities,
+    sales,
+    profit,
+    missingCosts,
+    previousRisks,
+    previousOpportunities,
+  ] = await Promise.all([
+    container.priorities.getPriorities(range),
+    container.signals.getRisks(range),
+    container.signals.getOpportunities(range),
+    container.sales.getSummary(range),
+    container.profit.getSummary(range),
+    // Maliyet ekranıyla **aynı** port, aynı aralık: iki ekran aynı kuyruğu
+    // görsün diye rapor burada yeniden hesaplanmıyor.
+    container.costInsights.getMissingCosts(range),
+    container.signals.getRisks(previousRange),
+    container.signals.getOpportunities(previousRange),
+  ]);
+
+  const [t, common, comparisonMessages] = await Promise.all([
     getTranslations("cockpit"),
     getTranslations("common"),
+    getTranslations("comparison"),
   ]);
+
+  /**
+   * Beş karşılaştırma, tek hesap.
+   *
+   * Alt bileşenlerin hiçbiri kendi farkını çıkarmaz: aynı sayıyı iki yerde
+   * hesaplamak, bir gün iki farklı "önceki dönem" göstermenin en kestirme
+   * yoluydu.
+   */
+  const comparisons = buildComparisonViews(
+    buildPeriodComparison({
+      range,
+      sales,
+      profit,
+      risks,
+      opportunities,
+      previousRisks,
+      previousOpportunities,
+    }),
+    locale,
+    { comparison: comparisonMessages, common },
+  );
 
   /**
    * Görünüm modelleri sunucuda hazırlanır: çeviri ve para biçimlendirmesi
@@ -156,7 +211,7 @@ export async function CockpitPage({
           sales={sales}
           profit={profit}
           locale={locale}
-          periodLabel={analysisRangeLabel(analysisWindow, locale)}
+          comparisons={comparisons}
         />
 
         {/* 4 — DAĞILIM */}
@@ -175,6 +230,18 @@ export async function CockpitPage({
             }
             flush
           >
+            {/*
+              Toplam, dağılımın üstünde: "hangi türden kaç tane" sorusundan
+              önce "toplamda ne kadar ve dün neye göre" cevaplanmalı. Boş
+              durum bozulmuyor — sinyal yoksa toplam ₺0 ve altındaki
+              `SignalSummary` yine "Risk yok" der.
+            */}
+            <ComparisonStat
+              className="border-border border-b pt-0"
+              label={t("riskTotal")}
+              value={formatMoney(signalsAtStake(risks), locale)}
+              comparison={comparisons.risk}
+            />
             <div className="px-4 pb-2">
               <SignalSummary
                 signals={risks}
@@ -201,6 +268,12 @@ export async function CockpitPage({
             }
             flush
           >
+            <ComparisonStat
+              className="border-border border-b pt-0"
+              label={t("opportunityTotal")}
+              value={formatMoney(signalsAtStake(opportunities), locale)}
+              comparison={comparisons.opportunity}
+            />
             <div className="px-4 pb-2">
               <SignalSummary
                 signals={opportunities}

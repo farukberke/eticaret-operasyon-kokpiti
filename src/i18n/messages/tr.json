@@ -44,6 +44,17 @@
     "invalidRange": "Başlangıç tarihi bitiş tarihinden sonra olamaz.",
     "windowNote": "{range} dönemine göre."
   },
+  "comparison": {
+    "increased": "Önceki döneme göre {amount} arttı",
+    "decreased": "Önceki döneme göre {amount} azaldı",
+    "unchanged": "Değişim yok",
+    "new": "Yeni",
+    "noPreviousData": "Önceki dönemde veri yok",
+    "notComparable": "Karşılaştırılamıyor",
+    "previousValue": "önceki {value}",
+    "previousWindow": "önceki {range}",
+    "separator": " · "
+  },
   "cockpit": {
     "greeting": "Günaydın",
     "todayIs": "{date}",
@@ -65,7 +76,9 @@
     "missingCostCta": "Tamamla",
     "missingCostMore": "Diğer {count} ürün",
     "missingCostDone": "Harika!",
-    "missingCostDoneHint": "Tüm ürünlerin alış maliyetleri tamamlanmış."
+    "missingCostDoneHint": "Tüm ürünlerin alış maliyetleri tamamlanmış.",
+    "riskTotal": "Toplam risk",
+    "opportunityTotal": "Toplam fırsat"
   },
   "kpi": {
     "revenue": "Ciro",
