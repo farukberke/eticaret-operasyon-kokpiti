@@ -1,6 +1,13 @@
 import type { CostStatus, ProductPerformance } from "@/core/domain";
+import type { StockForecast } from "@/core/services/stock-forecast";
 import type { Locale } from "@/i18n/routing";
 import { EMPTY, formatMoney, formatNumber, formatPercent } from "@/lib/format";
+
+import {
+  toStockCoverageView,
+  type StockCoverageTexts,
+  type StockCoverageView,
+} from "./stock-forecast-view";
 
 /**
  * Tablo satırı — **serileştirilebilir** görünüm modeli.
@@ -28,6 +35,10 @@ export interface ProductRow {
   readonly marginRatio: number | null;
   readonly returnRate: number | null;
   readonly stock: number;
+  /**
+   * Sıralama için ham kalan gün. Ölçülemeyen ürünler `null` ile sona düşer —
+   * "hesaplanamıyor" en iyi değer değildir.
+   */
   readonly daysOfCover: number | null;
 
   /** Ekranda görünen biçimlenmiş metinler. */
@@ -38,7 +49,9 @@ export interface ProductRow {
   readonly marginLabel: string;
   readonly returnRateLabel: string;
   readonly stockLabel: string;
-  readonly daysOfCoverLabel: string;
+
+  /** Kalan gün hücresi: durum kelimesi, ton ve tahmini gün sayısı. */
+  readonly coverage: StockCoverageView;
 }
 
 export interface ProductTableLabels {
@@ -56,12 +69,16 @@ export interface ProductTableLabels {
   readonly empty: string;
   readonly emptyDescription: string;
   readonly sortHint: string;
+  /** Tablonun altındaki dipnot: tahminin neye dayandığı. */
+  readonly coverageNote: string;
 }
 
 export function toProductRow(
   performance: ProductPerformance,
+  /** Toplu hesaptan gelen tahmin; ürün başına yeniden üretilmez. */
+  forecast: StockForecast | undefined,
   locale: Locale,
-  formatDays: (days: string) => string,
+  coverageTexts: StockCoverageTexts,
 ): ProductRow {
   return {
     id: performance.product.id,
@@ -76,7 +93,10 @@ export function toProductRow(
     marginRatio: performance.marginRatio,
     returnRate: performance.returnRate,
     stock: performance.product.stock,
-    daysOfCover: performance.daysOfCover,
+    // Sıralama tahminin kendisinden okunur, `performance.daysOfCover`dan
+    // değil: negatif stoklu bir ürün orada sayı taşır ama tabloda
+    // "hesaplanamıyor" der; iki kaynak sıralamada birbirini yalanlardı.
+    daysOfCover: forecast?.daysRemaining ?? null,
 
     unitsSoldLabel: formatNumber(performance.unitsSold, locale),
     netRevenueLabel: formatMoney(performance.netRevenue, locale),
@@ -93,9 +113,7 @@ export function toProductRow(
     marginLabel: formatPercent(performance.marginRatio, locale),
     returnRateLabel: formatPercent(performance.returnRate, locale),
     stockLabel: formatNumber(performance.product.stock, locale),
-    daysOfCoverLabel:
-      performance.daysOfCover === null
-        ? EMPTY
-        : formatDays(formatNumber(performance.daysOfCover, locale, 1)),
+
+    coverage: toStockCoverageView(forecast, locale, coverageTexts),
   };
 }

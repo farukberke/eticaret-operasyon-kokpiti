@@ -6,7 +6,11 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export default async function Page({ params }: PageProps<"/[locale]/products">) {
-  const locale = await resolveLocale(params);
-  return <ProductsPage locale={locale} />;
+/** Analiz penceresi kokpitteki bağlantılarla `?period=` olarak gelir. */
+export default async function Page({
+  params,
+  searchParams,
+}: PageProps<"/[locale]/products">) {
+  const [locale, query] = await Promise.all([resolveLocale(params), searchParams]);
+  return <ProductsPage locale={locale} searchParams={query} />;
 }

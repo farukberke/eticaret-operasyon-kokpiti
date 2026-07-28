@@ -162,7 +162,7 @@
   },
   "products": {
     "title": "Ürün performansı",
-    "description": "Son {days} günün ürün bazlı sonuçları",
+    "description": "Ürün bazlı sonuçlar.",
     "name": "Ürün",
     "category": "Kategori",
     "unitsSold": "Satış",
@@ -171,13 +171,23 @@
     "margin": "Marj",
     "returnRate": "İade",
     "stock": "Stok",
-    "daysOfCover": "Stok günü",
+    "daysOfCover": "Kalan gün",
     "daysUnit": "{days} gün",
     "empty": "Ürün bulunamadı",
     "emptyDescription": "Bu dönemde gösterilecek ürün yok.",
     "unitCost": "Alış maliyeti",
     "costStatus": "Durum",
-    "costMissing": "Maliyet eksik"
+    "costMissing": "Maliyet eksik",
+    "coverage": {
+      "critical": "Kritik",
+      "low": "Düşük",
+      "normal": "Normal",
+      "high": "Yüksek stok",
+      "unknown": "Hesaplanamıyor",
+      "noSales": "Satış verisi yok",
+      "negative": "Negatif stok",
+      "hint": "Son {days} günlük satış hızına göre tahmini."
+    }
   },
   "sales": {
     "title": "Satış",

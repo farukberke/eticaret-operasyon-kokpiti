@@ -1,10 +1,67 @@
 "use client";
 
+import {
+  Boxes,
+  CircleCheck,
+  CircleHelp,
+  CircleMinus,
+  PackageX,
+  TrendingDown,
+  TriangleAlert,
+  type LucideIcon,
+} from "lucide-react";
+
+import type { StockCoverageState } from "@/core/services/stock-forecast";
 import { Badge } from "@/ui/primitives/badge";
 import { DataTable, type Column } from "@/ui/patterns/data-table";
 import { EmptyState } from "@/ui/patterns/empty-state";
 
 import type { ProductRow, ProductTableLabels } from "./product-row";
+
+/**
+ * Durum → ikon.
+ *
+ * İkon seçimi burada, çünkü React bileşeni sunucu→istemci sınırını geçemez;
+ * sunucudan yalnızca `state` metni geliyor.
+ *
+ * Her durumun kendi ikonu var ve hiçbiri yalnızca renkle ayrışmıyor: üçgen
+ * uyarı, düşen ok, onay, kutular, soru, çizgi ve kırık paket birbirinden
+ * biçimce de ayırt edilebilir.
+ */
+const COVERAGE_ICON: Record<StockCoverageState, LucideIcon> = {
+  critical: TriangleAlert,
+  low: TrendingDown,
+  normal: CircleCheck,
+  high: Boxes,
+  unknown: CircleHelp,
+  noSales: CircleMinus,
+  negative: PackageX,
+};
+
+/**
+ * "Kalan gün" hücresi.
+ *
+ * İki katman: üstte tahmini gün sayısı (sıralanan sayı), altında durumu
+ * söyleyen ikonlu rozet. Ölçülemeyen ürünlerde sayı satırı hiç yok — "—"
+ * basıp altına "Satış verisi yok" yazmak aynı şeyi iki kez söylemek olurdu.
+ *
+ * `title` tahminin dayanağını taşır: kullanıcı 2,5 günün nereden geldiğini
+ * tablodan ayrılmadan görebilmeli.
+ */
+function CoverageCell({ row }: { row: ProductRow }) {
+  const { coverage } = row;
+  const Icon = COVERAGE_ICON[coverage.state];
+
+  return (
+    <div className="flex flex-col items-end gap-1" title={coverage.hint}>
+      {coverage.daysLabel && <span className="tabular">{coverage.daysLabel}</span>}
+      <Badge tone={coverage.tone}>
+        <Icon className="size-3 shrink-0" aria-hidden />
+        {coverage.stateLabel}
+      </Badge>
+    </div>
+  );
+}
 
 /**
  * Ürün tablosunun istemci yarısı.
@@ -109,22 +166,38 @@ export function ProductTableClient({
     {
       key: "daysOfCover",
       header: labels.daysOfCover,
-      render: (row) => row.daysOfCoverLabel,
+      render: (row) => <CoverageCell row={row} />,
+      /**
+       * Sıralama ham gün sayısıyla: en az kalan gün ilk tıklamada başa gelir.
+       * Ölçülemeyenler `null` olduğu için tablonun sonuna düşer — "bilinmiyor"
+       * ne en iyi ne en kötü değerdir.
+       */
       sortValue: (row) => row.daysOfCover,
       numeric: true,
     },
   ];
 
   return (
-    <DataTable
-      rows={rows}
-      columns={columns}
-      getRowId={(row) => row.id}
-      initialSort={{ key: "netRevenue", direction: "desc" }}
-      sortHint={labels.sortHint}
-      emptyState={
-        <EmptyState title={labels.empty} description={labels.emptyDescription} />
-      }
-    />
+    <div className="flex flex-col gap-2">
+      <DataTable
+        rows={rows}
+        columns={columns}
+        getRowId={(row) => row.id}
+        initialSort={{ key: "netRevenue", direction: "desc" }}
+        sortHint={labels.sortHint}
+        emptyState={
+          <EmptyState title={labels.empty} description={labels.emptyDescription} />
+        }
+      />
+      {/*
+        Tahminin dayanağı tablonun altında bir kez yazılı. Rozet "Kritik"
+        diyorsa kullanıcı bunun hangi döneme göre söylendiğini bilmeden karar
+        veremez — 7 günlük hıza göre kritik olan ürün 90 günlük hıza göre
+        normal olabilir.
+      */}
+      {rows.length > 0 && (
+        <p className="text-fg-subtle px-4 pb-2 text-xs">{labels.coverageNote}</p>
+      )}
+    </div>
   );
 }

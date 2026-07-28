@@ -172,3 +172,33 @@ export const DEFAULT_RULES: RulesConfig = {
     actionLimit: 5,
   },
 };
+
+/**
+ * Stok yeterlilik gününün seviye sınırları — ürün tablosundaki "Kalan gün"
+ * rozeti bunlara göre renk ve kelime seçer.
+ *
+ * İlk iki sınır yeni sayı DEĞİL, `DEFAULT_RULES` içindeki mevcut eşiklerin
+ * kendisi. Bu bilinçli: "Kritik" rozeti gördüğü ürün için kullanıcı kuyrukta
+ * `STOCKOUT_IMMINENT` sinyalini de görmeli. Sınırları elle 7 ve 21 yazsaydım
+ * biri değiştiğinde tablo ile kuyruk sessizce ayrışır ve panel kendi kendini
+ * yalanlardı.
+ *
+ * `high` yalnızca burada tanımlı, çünkü hiçbir sinyal üretmiyor: aşırı stok
+ * bir uyarı değil, "bu ürüne bir daha sipariş verme" bağlamı. İki aylık
+ * yeterlilik, `forecastHorizonDays` (30) ufkunun iki katıdır — bu ürün
+ * projeksiyon penceresi boyunca hiçbir karar gerektirmez.
+ */
+export interface StockCoverageThresholds {
+  /** Bu gün sayısı ve altı kritik. */
+  readonly critical: number;
+  /** Kritiğin üstünde, bu değer ve altı düşük. */
+  readonly low: number;
+  /** Düşüğün üstünde, bu değer ve altı normal; üstü yüksek stok. */
+  readonly normal: number;
+}
+
+export const STOCK_COVERAGE_THRESHOLDS: StockCoverageThresholds = {
+  critical: DEFAULT_RULES.risk.stockoutDaysOfCover,
+  low: DEFAULT_RULES.opportunity.restockDaysOfCover,
+  normal: DEFAULT_RULES.inventory.forecastHorizonDays * 2,
+};

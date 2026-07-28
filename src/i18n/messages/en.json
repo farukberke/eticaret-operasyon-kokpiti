@@ -162,7 +162,7 @@
   },
   "products": {
     "title": "Product performance",
-    "description": "Product-level results for the last {days} days",
+    "description": "Product-level results.",
     "name": "Product",
     "category": "Category",
     "unitsSold": "Sold",
@@ -171,13 +171,23 @@
     "margin": "Margin",
     "returnRate": "Returns",
     "stock": "Stock",
-    "daysOfCover": "Days of cover",
+    "daysOfCover": "Days left",
     "daysUnit": "{days} days",
     "empty": "No products found",
     "emptyDescription": "Nothing to show for this period.",
     "unitCost": "Unit cost",
     "costStatus": "Status",
-    "costMissing": "Cost missing"
+    "costMissing": "Cost missing",
+    "coverage": {
+      "critical": "Critical",
+      "low": "Low",
+      "normal": "Normal",
+      "high": "Overstocked",
+      "unknown": "Not calculable",
+      "noSales": "No sales data",
+      "negative": "Negative stock",
+      "hint": "Estimated from the last {days} days of sales velocity."
+    }
   },
   "sales": {
     "title": "Sales",
