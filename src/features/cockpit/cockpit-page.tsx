@@ -12,6 +12,7 @@ import {
   orderStockAlertsByPriority,
 } from "@/core/services/purchase-priority";
 import { buildLeadTimeRisks } from "@/core/services/lead-time-risk";
+import { buildPurchaseActionPlan } from "@/core/services/purchase-action-plan";
 import { buildReorderRecommendations } from "@/core/services/reorder-suggestion";
 import { buildStockAlerts } from "@/core/services/stock-alerts";
 import { buildStockForecasts } from "@/core/services/stock-forecast";
@@ -189,6 +190,15 @@ export async function CockpitPage({
     stockAlerts,
     purchasePriorities,
   );
+  /**
+   * Günlük satın alma eylem planı — `purchasePriorities` ve
+   * `reorderRecommendations`i olduğu gibi okur, rütbeyi yeniden kurmaz.
+   * Kartın gördüğü eylem rozeti ve kompakt özet burada, tek yerde biter.
+   */
+  const purchaseActionPlan = buildPurchaseActionPlan(
+    purchasePriorities,
+    reorderRecommendations,
+  );
 
   const [t, common, comparisonMessages] = await Promise.all([
     getTranslations("cockpit"),
@@ -360,6 +370,7 @@ export async function CockpitPage({
           reorderRecommendations={reorderRecommendations}
           purchasePriorities={purchasePriorities}
           leadTimeRisks={leadTimeRisks.byProduct}
+          actionPlan={purchaseActionPlan}
         />
 
         {/* 5 — KAPANIŞ. Günün işi bittikten sonra okunacak not. */}

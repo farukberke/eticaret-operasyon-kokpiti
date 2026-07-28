@@ -220,6 +220,32 @@
       "upcoming": "About {days} days left to decide on a reorder.",
       "unknownLeadTime": "Lead time information is missing.",
       "detail": "Lead time: {leadDays} days · Estimated stock: {coverDays} days"
+    },
+    "actionPlan": {
+      "title": "Today's purchasing plan",
+      "empty": "No urgent purchasing action today.",
+      "action": {
+        "actNow": "Act now",
+        "decideToday": "Decide today",
+        "planSoon": "Plan soon",
+        "completeData": "Complete data",
+        "review": "Review"
+      },
+      "summaryLine": "{label}: {count}",
+      "reason": {
+        "stockAlreadyNegative": "Stock record is negative; fix the data first.",
+        "leadTimeAlreadyLate": "Reorder planning looks delayed.",
+        "orderDueToday": "Reorder planning should be reviewed today.",
+        "decisionWindowApproaching": "The reorder decision window is approaching.",
+        "leadTimeMissing": "Lead time is missing.",
+        "stockDataMissing": "Stock data is missing.",
+        "criticalStock": "Stock is at a critical level.",
+        "lowStock": "Stock is at a low level."
+      },
+      "quantity": {
+        "correctStock": "Fix the stock data first.",
+        "needsStockData": "Reorder quantity cannot be calculated."
+      }
     }
   },
   "purchasePriority": {

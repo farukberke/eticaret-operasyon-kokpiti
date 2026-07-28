@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import type {
+  PurchaseActionKind,
+  PurchaseActionReasonCode,
+} from "@/core/services/purchase-action-plan";
 import type { StockAlertLevel } from "@/core/services/stock-alerts";
 import en from "@/i18n/messages/en.json";
 import tr from "@/i18n/messages/tr.json";
@@ -103,5 +107,87 @@ describe("stok uyarısı sözlüğü", () => {
     expect(Object.keys(tr.stockAlerts.leadTime).sort()).toEqual(
       Object.keys(en.stockAlerts.leadTime).sort(),
     );
+    expect(Object.keys(tr.stockAlerts.actionPlan).sort()).toEqual(
+      Object.keys(en.stockAlerts.actionPlan).sort(),
+    );
+    expect(Object.keys(tr.stockAlerts.actionPlan.action).sort()).toEqual(
+      Object.keys(en.stockAlerts.actionPlan.action).sort(),
+    );
+    expect(Object.keys(tr.stockAlerts.actionPlan.reason).sort()).toEqual(
+      Object.keys(en.stockAlerts.actionPlan.reason).sort(),
+    );
+    expect(Object.keys(tr.stockAlerts.actionPlan.quantity).sort()).toEqual(
+      Object.keys(en.stockAlerts.actionPlan.quantity).sort(),
+    );
   });
+});
+
+/**
+ * GÜNLÜK SATIN ALMA EYLEM PLANI SÖZLÜĞÜ.
+ *
+ * `PurchaseActionKind` (beş eylem) ve `PurchaseActionReasonCode` (sekiz
+ * gerekçe) iki dilde de dolu ve ayırt edilebilir metne sahip olmalı —
+ * `stock-alerts.test.ts` / `purchase-priority.test.ts`teki aynı desen.
+ */
+const ACTIONS: Record<PurchaseActionKind, true> = {
+  actNow: true,
+  decideToday: true,
+  planSoon: true,
+  completeData: true,
+  review: true,
+};
+const ALL_ACTIONS = Object.keys(ACTIONS) as PurchaseActionKind[];
+
+const REASONS: Record<PurchaseActionReasonCode, true> = {
+  stockAlreadyNegative: true,
+  leadTimeAlreadyLate: true,
+  orderDueToday: true,
+  decisionWindowApproaching: true,
+  leadTimeMissing: true,
+  stockDataMissing: true,
+  criticalStock: true,
+  lowStock: true,
+};
+const ALL_REASONS = Object.keys(REASONS) as PurchaseActionReasonCode[];
+
+describe("satın alma eylem planı sözlüğü", () => {
+  for (const [locale, messages] of Object.entries({ tr, en })) {
+    const actionPlan = messages.stockAlerts.actionPlan;
+    const action = actionPlan.action as unknown as Record<string, string>;
+    const reason = actionPlan.reason as unknown as Record<string, string>;
+
+    it(`${locale}: beş eylemin de etiketi dolu ve ayırt edilebilir`, () => {
+      const labels = ALL_ACTIONS.map((kind) => {
+        expect(
+          action[kind]?.trim(),
+          `${locale}.stockAlerts.actionPlan.action.${kind}`,
+        ).toBeTruthy();
+        return action[kind];
+      });
+      expect(new Set(labels).size).toBe(labels.length);
+    });
+
+    it(`${locale}: sekiz gerekçenin de metni dolu ve ayırt edilebilir`, () => {
+      const labels = ALL_REASONS.map((code) => {
+        expect(
+          reason[code]?.trim(),
+          `${locale}.stockAlerts.actionPlan.reason.${code}`,
+        ).toBeTruthy();
+        return reason[code];
+      });
+      expect(new Set(labels).size).toBe(labels.length);
+    });
+
+    it(`${locale}: başlık, boş durum ve miktar metinleri dolu`, () => {
+      expect(actionPlan.title.trim()).not.toBe("");
+      expect(actionPlan.empty.trim()).not.toBe("");
+      expect(actionPlan.quantity.correctStock.trim()).not.toBe("");
+      expect(actionPlan.quantity.needsStockData.trim()).not.toBe("");
+    });
+
+    it(`${locale}: özet satırı etiket ve sayı yer tutucularını taşıyor`, () => {
+      expect(actionPlan.summaryLine).toContain("{label}");
+      expect(actionPlan.summaryLine).toContain("{count}");
+    });
+  }
 });

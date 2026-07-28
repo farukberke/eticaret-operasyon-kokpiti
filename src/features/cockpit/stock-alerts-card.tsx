@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 
 import type { LeadTimeRisk } from "@/core/services/lead-time-risk";
+import type { PurchaseActionPlanBatch } from "@/core/services/purchase-action-plan";
 import type { PurchasePriorityItem } from "@/core/services/purchase-priority";
 import type { ReorderRecommendation } from "@/core/services/reorder-suggestion";
 import type { StockAlert } from "@/core/services/stock-alerts";
@@ -24,6 +25,11 @@ import { Button } from "@/ui/primitives/button";
 import { EmptyState } from "@/ui/patterns/empty-state";
 import { SectionCard } from "@/ui/patterns/section-card";
 
+import {
+  buildPurchaseActionPlanTexts,
+  toPurchaseActionPlanRowViews,
+  toPurchaseActionPlanSummaryView,
+} from "./purchase-action-plan-view";
 import {
   buildPurchasePriorityTexts,
   toPurchasePriorityViews,
@@ -49,6 +55,17 @@ import {
  */
 const NO_PRIORITIES: readonly PurchasePriorityItem[] = [];
 const NO_LEAD_TIME_RISKS: ReadonlyMap<string, LeadTimeRisk> = new Map();
+const NO_ACTION_PLAN: PurchaseActionPlanBatch = {
+  items: [],
+  summary: {
+    total: 0,
+    actNowCount: 0,
+    decideTodayCount: 0,
+    planSoonCount: 0,
+    completeDataCount: 0,
+    reviewCount: 0,
+  },
+};
 
 /**
  * `LeadTimeRiskView.tone`u metin rengine çevirir — rozet açılmıyor, çünkü
@@ -75,6 +92,7 @@ export function StockAlertsCard({
   reorderRecommendations,
   purchasePriorities = NO_PRIORITIES,
   leadTimeRisks = NO_LEAD_TIME_RISKS,
+  actionPlan = NO_ACTION_PLAN,
 }: {
   /**
    * Gösterim sırası — kart bu sırayı **değiştirmez**. Satın alma öncelik
@@ -105,6 +123,13 @@ export function StockAlertsCard({
    * bilgisi olmadan, önceki davranışıyla aynı şekilde çalışmaya devam eder.
    */
   leadTimeRisks?: ReadonlyMap<string, LeadTimeRisk>;
+  /**
+   * `buildPurchaseActionPlan`in çıktısı — yalnızca negative/critical/low
+   * kapsar, rütbe sırası `purchasePriorities`ten aynen gelir. Verilmezse
+   * (ör. eski çağıranlar) kart eylem rozeti/özeti olmadan, önceki
+   * davranışıyla aynı şekilde çalışmaya devam eder.
+   */
+  actionPlan?: PurchaseActionPlanBatch;
 }) {
   const t = useTranslations("stockAlerts");
   const products = useTranslations("products");
@@ -130,6 +155,18 @@ export function StockAlertsCard({
     priorityTexts,
   );
 
+  const actionPlanTexts = buildPurchaseActionPlanTexts(t);
+  const actionPlanRowViews = toPurchaseActionPlanRowViews(
+    actionPlan.items,
+    locale,
+    actionPlanTexts,
+  );
+  const actionPlanSummary = toPurchaseActionPlanSummaryView(
+    actionPlan,
+    locale,
+    actionPlanTexts,
+  );
+
   const urgent = views[0]?.state === "negative" || views[0]?.state === "critical";
 
   return (
@@ -145,10 +182,33 @@ export function StockAlertsCard({
         <EmptyState title={t("empty")} description={t("emptyDescription")} />
       ) : (
         <div className="flex flex-col gap-2">
+          {/*
+            BUGÜNÜN SATIN ALMA PLANI — kompakt özet. Sayılar
+            `buildPurchaseActionPlan`in tek geçişte hazırladığı `summary`den
+            gelir; burada `filter`/toplama yapılmaz. Plan boşsa (yalnızca
+            `unknown` durumlu ürünler varsa) sakin, iddiasız bir cümle
+            gösterilir — kart bozulmaz, mevcut boş durumla çelişmez.
+          */}
+          <div className="border-border bg-surface-muted rounded-lg border p-3">
+            <p className="text-fg text-xs font-semibold">{actionPlanSummary.title}</p>
+            {actionPlanSummary.hasActions ? (
+              <ul className="text-fg-muted mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+                {actionPlanSummary.rows.map((row) => (
+                  <li key={row.action}>{row.line}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-fg-muted mt-1 text-xs">
+                {actionPlanSummary.emptyText}
+              </p>
+            )}
+          </div>
+
           <ul className="flex flex-col gap-2">
             {views.map((view) => {
               const priorityView = priorityViews.get(view.productId);
               const leadTimeView = leadTimeViews.get(view.productId);
+              const actionView = actionPlanRowViews.get(view.productId);
 
               return (
                 <li
@@ -164,6 +224,9 @@ export function StockAlertsCard({
                         <Badge tone={view.tone}>{view.stateLabel}</Badge>
                         {priorityView?.rankLabel ? (
                           <Badge tone="accent">{priorityView.rankLabel}</Badge>
+                        ) : null}
+                        {actionView ? (
+                          <Badge tone={actionView.tone}>{actionView.actionLabel}</Badge>
                         ) : null}
                       </div>
 

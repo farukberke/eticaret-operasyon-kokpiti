@@ -220,6 +220,32 @@
       "upcoming": "Sipariş kararına yaklaşık {days} gün var.",
       "unknownLeadTime": "Tedarik süresi bilgisi eksik.",
       "detail": "Tedarik süresi: {leadDays} gün · Tahmini stok: {coverDays} gün"
+    },
+    "actionPlan": {
+      "title": "Bugünün satın alma planı",
+      "empty": "Bugün acil satın alma eylemi görünmüyor.",
+      "action": {
+        "actNow": "Hemen ele al",
+        "decideToday": "Bugün karar ver",
+        "planSoon": "Yakında planla",
+        "completeData": "Veriyi tamamla",
+        "review": "İncele"
+      },
+      "summaryLine": "{label}: {count}",
+      "reason": {
+        "stockAlreadyNegative": "Stok kaydı negatif; önce veri düzeltilmeli.",
+        "leadTimeAlreadyLate": "Sipariş planlaması gecikmiş görünüyor.",
+        "orderDueToday": "Sipariş planlaması bugün değerlendirilmeli.",
+        "decisionWindowApproaching": "Sipariş karar penceresi yaklaşıyor.",
+        "leadTimeMissing": "Tedarik süresi eksik.",
+        "stockDataMissing": "Stok verisi eksik.",
+        "criticalStock": "Stok kritik seviyede.",
+        "lowStock": "Stok düşük seviyede."
+      },
+      "quantity": {
+        "correctStock": "Önce stok bilgisini düzeltin.",
+        "needsStockData": "Sipariş miktarı hesaplanamıyor."
+      }
     }
   },
   "purchasePriority": {
