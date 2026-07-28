@@ -13,17 +13,23 @@ import { TaskStateProvider } from "@/features/tasks/task-state-provider.client";
 import { CockpitQueue } from "./cockpit-queue.client";
 import { ContextStrip } from "./context-strip";
 import { DayLedger } from "./day-ledger.client";
+import { MissingCostCard } from "./missing-cost-card";
 
 /**
  * KOKPİT — "sabah aç, 30 saniyede ne yapacağını anla".
  *
  * Ekran bir rapor değil, bir **vardiya devri**. Yukarıdan aşağıya:
  *
+ *   0. Eksik maliyet       → panelin kâr hesaplayabilmesinin ön koşulu
  *   1. Günün tek cümlesi   → kaç iş, ne kadar para, ne kadar acele
  *   2. Kuyruk              → yapılacak işler, dört soruya cevaplı
  *   3. Bağlam şeridi       → net kâr, marj, ciro (arka plan)
  *   4. Risk/fırsat özeti   → türe göre dağılım
  *   5. Defter              → kapattığın işlerin getirisi (kapanış notu)
+ *
+ * Sıfırıncı adım en üstte duruyor çünkü altındaki her rakam ona bağlı: alış
+ * maliyeti eksik olduğu sürece kuyruğun "şu kadar kâr korunur" cümlesi de,
+ * bağlam şeridindeki net kâr da eksik bir veri kümesinden konuşur.
  *
  * Bilinçli olarak burada OLMAYANLAR ve sebepleri:
  *
@@ -60,13 +66,17 @@ export async function CockpitPage({ locale }: { locale: Locale }) {
   const range = defaultRange();
 
   // Portlar birbirinden bağımsız; hepsi paralel çekilir.
-  const [priorities, risks, opportunities, sales, profit] = await Promise.all([
-    container.priorities.getPriorities(range),
-    container.signals.getRisks(range),
-    container.signals.getOpportunities(range),
-    container.sales.getSummary(range),
-    container.profit.getSummary(range),
-  ]);
+  const [priorities, risks, opportunities, sales, profit, missingCosts] =
+    await Promise.all([
+      container.priorities.getPriorities(range),
+      container.signals.getRisks(range),
+      container.signals.getOpportunities(range),
+      container.sales.getSummary(range),
+      container.profit.getSummary(range),
+      // Maliyet ekranıyla **aynı** port, aynı aralık: iki ekran aynı kuyruğu
+      // görsün diye rapor burada yeniden hesaplanmıyor.
+      container.costInsights.getMissingCosts(range),
+    ]);
 
   const [t, common] = await Promise.all([
     getTranslations("cockpit"),
@@ -97,6 +107,9 @@ export async function CockpitPage({ locale }: { locale: Locale }) {
      */
     <TaskStateProvider today={today}>
       <div className="flex flex-col gap-5">
+        {/* 0 — ÖNCE BUNLARI TAMAMLAYIN */}
+        <MissingCostCard report={missingCosts} locale={locale} />
+
         {/* 1–2 — GÜNÜN CÜMLESİ + KUYRUK */}
         <CockpitQueue views={views} today={today} locale={locale} currency={CURRENCY} />
 

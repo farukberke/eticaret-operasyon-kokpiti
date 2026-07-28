@@ -45,7 +45,11 @@
     "noOpportunitiesDescription": "No new trend or pricing opening right now.",
     "briefCount": "You have {count} things to do today.",
     "briefStake": "Acting protects {amount} in profit.",
-    "briefOverdue": "{count} of them are overdue."
+    "briefOverdue": "{count} of them are overdue.",
+    "missingCostCta": "Complete",
+    "missingCostMore": "{count} more products",
+    "missingCostDone": "Great!",
+    "missingCostDoneHint": "Purchase costs are filled in for every product."
   },
   "kpi": {
     "revenue": "Revenue",

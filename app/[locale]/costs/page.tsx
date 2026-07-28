@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
+import { readFocusProductId } from "@/features/costs/cost-focus";
 import { CostsPage } from "@/features/costs/costs-page";
 import { resolveLocale } from "@/i18n/locale-param";
 import { routing } from "@/i18n/routing";
@@ -26,7 +27,17 @@ export async function generateMetadata({
   return { title: t("title"), description: t("description") };
 }
 
-export default async function Page({ params }: PageProps<"/[locale]/costs">) {
-  const locale = await resolveLocale(params);
-  return <CostsPage locale={locale} />;
+/**
+ * `?product=` kokpitten gelir: hangi ürünün maliyet formu açık başlayacak.
+ * Durum bileşen içinde değil adreste tutuluyor — bağlantı paylaşılabilir ve
+ * sayfa yenilendiğinde kullanıcı aynı yerde kalır.
+ */
+export default async function Page({
+  params,
+  searchParams,
+}: PageProps<"/[locale]/costs">) {
+  const [locale, query] = await Promise.all([resolveLocale(params), searchParams]);
+  const focusProductId = readFocusProductId(query);
+
+  return <CostsPage locale={locale} {...(focusProductId ? { focusProductId } : {})} />;
 }

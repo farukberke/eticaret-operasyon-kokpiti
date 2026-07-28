@@ -26,7 +26,17 @@ import { templateCsv } from "./import-actions";
  * adımda) toplu içe aktarma burada yaşar. Ürün tablosuna form sıkıştırmak
  * onu okunmaz bir canavara çevirirdi.
  */
-export async function CostsPage({ locale }: { locale: Locale }) {
+export async function CostsPage({
+  locale,
+  focusProductId,
+}: {
+  locale: Locale;
+  /**
+   * Kokpitteki "Tamamla" ile gelindiğinde formu açık başlayacak ürün.
+   * Adres çubuğunda durur: bağlantı paylaşılabilir, yenilenince kaybolmaz.
+   */
+  focusProductId?: string | undefined;
+}) {
   const range = defaultRange();
   const [performance, profit, missing, template, costSource, t] = await Promise.all([
     container.products.getPerformance(range),
@@ -136,7 +146,19 @@ export async function CostsPage({ locale }: { locale: Locale }) {
               description={t("priorityAllCoveredHint")}
             />
           ) : (
-            <MissingCostPanel rows={missingRows} today={today} remaining={remaining} />
+            <MissingCostPanel
+              /**
+               * Odaklanılan ürün değiştiğinde panel sıfırdan kurulur:
+               * `useState` başlangıç değeri yalnızca ilk render'da okunur ve
+               * anahtar olmadan ikinci bir "Tamamla" tıklaması yanlış formu
+               * açık bırakırdı.
+               */
+              key={focusProductId ?? "none"}
+              rows={missingRows}
+              today={today}
+              remaining={remaining}
+              focusProductId={focusProductId}
+            />
           )}
         </SectionCard>
 

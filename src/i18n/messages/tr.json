@@ -45,7 +45,11 @@
     "noOpportunitiesDescription": "Yeni bir trend ya da fiyat fırsatı görünmüyor.",
     "briefCount": "Bugün {count} işin var.",
     "briefStake": "Yaparsan {amount} kâr korunur.",
-    "briefOverdue": "{count} tanesi gecikti."
+    "briefOverdue": "{count} tanesi gecikti.",
+    "missingCostCta": "Tamamla",
+    "missingCostMore": "Diğer {count} ürün",
+    "missingCostDone": "Harika!",
+    "missingCostDoneHint": "Tüm ürünlerin alış maliyetleri tamamlanmış."
   },
   "kpi": {
     "revenue": "Ciro",
