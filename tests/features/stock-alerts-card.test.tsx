@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it } from "vitest";
 
+import type { ReorderRecommendation } from "@/core/services/reorder-suggestion";
 import type { StockAlert } from "@/core/services/stock-alerts";
 import type { AnalysisSelection } from "@/core/services/analysis-window";
 import { StockAlertsCard } from "@/features/cockpit/stock-alerts-card";
@@ -34,6 +35,8 @@ function alert(overrides: Partial<StockAlert> = {}): StockAlert {
 
 const DEFAULT_WINDOW: AnalysisSelection = { preset: "last30" };
 
+const EMPTY_RECOMMENDATIONS: ReadonlyMap<string, ReorderRecommendation> = new Map();
+
 function renderCard(
   alerts: readonly StockAlert[],
   options: {
@@ -41,6 +44,7 @@ function renderCard(
     selection?: AnalysisSelection;
     hasData?: boolean;
     windowDays?: number;
+    reorderRecommendations?: ReadonlyMap<string, ReorderRecommendation>;
   } = {},
 ) {
   const {
@@ -48,6 +52,7 @@ function renderCard(
     selection = DEFAULT_WINDOW,
     hasData = true,
     windowDays = 30,
+    reorderRecommendations = EMPTY_RECOMMENDATIONS,
   } = options;
 
   return render(
@@ -58,6 +63,7 @@ function renderCard(
         hasData={hasData}
         locale={locale}
         selection={selection}
+        reorderRecommendations={reorderRecommendations}
       />
     </NextIntlClientProvider>,
   );
@@ -195,5 +201,73 @@ describe("kokpit stok uyarısı kartı", () => {
   it("İngilizce boş durum da çevrilidir", () => {
     renderCard([], { locale: "en" });
     expect(screen.getByText(en.stockAlerts.empty)).toBeDefined();
+  });
+
+  describe("yeniden sipariş önerisi", () => {
+    const SUGGESTED: ReorderRecommendation = {
+      kind: "suggested",
+      quantity: 39,
+      targetStockUnits: 50.4,
+      dailyVelocity: 2.4,
+      targetCoverageDays: 21,
+      currentStock: 12,
+    };
+
+    it("critical satırında öneri varsa 'Önerilen sipariş' satırını gösterir", () => {
+      renderCard([alert({ productId: "p1", level: "critical", daysRemaining: 5 })], {
+        reorderRecommendations: new Map([["p1", SUGGESTED]]),
+      });
+
+      const row = rows()[0]!;
+      expect(within(row).getByText(/Önerilen sipariş: 39 adet/)).toBeDefined();
+    });
+
+    it("öneri yoksa satır hiç gösterilmez", () => {
+      renderCard([alert({ productId: "p1", level: "critical", daysRemaining: 5 })]);
+
+      const row = rows()[0]!;
+      expect(within(row).queryByText(/Önerilen sipariş/)).toBeNull();
+    });
+
+    it("negative/unknown satırlarında öneri satırı gösterilmez", () => {
+      renderCard(
+        [
+          alert({ productId: "p1", level: "negative", daysRemaining: null }),
+          alert({ productId: "p2", level: "unknown", daysRemaining: null }),
+        ],
+        {
+          reorderRecommendations: new Map([
+            ["p1", { kind: "correctStock" }],
+            ["p2", { kind: "needsStockData" }],
+          ]),
+        },
+      );
+
+      for (const row of rows()) {
+        expect(within(row).queryByText(/Önerilen sipariş/)).toBeNull();
+      }
+    });
+
+    it("öneri satırı eklendiğinde CTA analiz penceresini korumaya devam eder", () => {
+      renderCard([alert({ productId: "p1", level: "critical", daysRemaining: 5 })], {
+        reorderRecommendations: new Map([["p1", SUGGESTED]]),
+        selection: { preset: "last7" },
+      });
+
+      const cta = screen.getByRole("link", { name: "Ürüne git" });
+      expect(cta.getAttribute("href")).toBe(
+        "/tr/products?product=p1&period=last7#product-p1",
+      );
+    });
+
+    it("İngilizce: öneri metni çeviridir", () => {
+      renderCard([alert({ productId: "p1", level: "critical", daysRemaining: 5 })], {
+        locale: "en",
+        reorderRecommendations: new Map([["p1", SUGGESTED]]),
+      });
+
+      const row = rows()[0]!;
+      expect(within(row).getByText(/Suggested reorder: 39 units/)).toBeDefined();
+    });
   });
 });

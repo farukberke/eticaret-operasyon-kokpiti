@@ -209,6 +209,10 @@
       "critical": "Tedarik planını bugün kontrol edin.",
       "unknown": "Güncel stok bilgisini ekleyin.",
       "low": "Yakın dönem için yeniden sipariş planlayın."
+    },
+    "reorder": {
+      "quantity": "Önerilen sipariş: {count} adet",
+      "basis": "Günde ortalama {velocity} adet satışa göre, {days} günlük hedef stok için tahmini."
     }
   },
   "sales": {

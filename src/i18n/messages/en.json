@@ -209,6 +209,10 @@
       "critical": "Check the supply plan today.",
       "unknown": "Add up-to-date stock information.",
       "low": "Plan a reorder for the near term."
+    },
+    "reorder": {
+      "quantity": "Suggested reorder: {count} units",
+      "basis": "Estimated for a {days}-day target stock at an average of {velocity} units/day."
     }
   },
   "sales": {

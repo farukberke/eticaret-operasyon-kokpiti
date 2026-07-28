@@ -53,6 +53,14 @@ describe("stok uyarısı sözlüğü", () => {
     it(`${locale}: adet etiketi sayı yerleştiriyor`, () => {
       expect(messages.stockAlerts.stockLabel).toContain("{count}");
     });
+
+    it(`${locale}: yeniden sipariş metinleri dolu ve yer tutucuları taşıyor`, () => {
+      expect(messages.stockAlerts.reorder.quantity.trim()).not.toBe("");
+      expect(messages.stockAlerts.reorder.quantity).toContain("{count}");
+      expect(messages.stockAlerts.reorder.basis.trim()).not.toBe("");
+      expect(messages.stockAlerts.reorder.basis).toContain("{velocity}");
+      expect(messages.stockAlerts.reorder.basis).toContain("{days}");
+    });
   }
 
   it("iki dil aynı anahtar kümesini taşıyor", () => {
@@ -64,6 +72,9 @@ describe("stok uyarısı sözlüğü", () => {
     );
     expect(Object.keys(tr.stockAlerts.action).sort()).toEqual(
       Object.keys(en.stockAlerts.action).sort(),
+    );
+    expect(Object.keys(tr.stockAlerts.reorder).sort()).toEqual(
+      Object.keys(en.stockAlerts.reorder).sort(),
     );
   });
 });

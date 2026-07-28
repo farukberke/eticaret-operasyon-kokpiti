@@ -7,6 +7,7 @@ import {
   comparisonRangeOf,
   signalsAtStake,
 } from "@/core/services/period-comparison";
+import { buildReorderRecommendations } from "@/core/services/reorder-suggestion";
 import { buildStockAlerts } from "@/core/services/stock-alerts";
 import { buildStockForecasts } from "@/core/services/stock-forecast";
 import { container } from "@/data/container";
@@ -153,6 +154,15 @@ export async function CockpitPage({
    */
   const stockForecasts = buildStockForecasts(productPerformance, range);
   const stockAlerts = buildStockAlerts(productPerformance, stockForecasts);
+  /**
+   * Aynı tek geçiş ilkesi: öneri `stockForecasts`i olduğu gibi okur, tahmini
+   * yeniden hesaplamaz. Kritik/düşük dışındaki ürünler için de üretiliyor
+   * (harita tüm katalogu kapsıyor) ama yalnızca kart bu satırları kullanıyor.
+   */
+  const reorderRecommendations = buildReorderRecommendations(
+    productPerformance,
+    stockForecasts,
+  );
 
   const [t, common, comparisonMessages] = await Promise.all([
     getTranslations("cockpit"),
@@ -319,6 +329,7 @@ export async function CockpitPage({
           hasData={productPerformance.length > 0}
           locale={locale}
           selection={selection}
+          reorderRecommendations={reorderRecommendations}
         />
 
         {/* 5 — KAPANIŞ. Günün işi bittikten sonra okunacak not. */}

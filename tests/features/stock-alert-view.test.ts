@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { ReorderRecommendation } from "@/core/services/reorder-suggestion";
 import type { StockAlert, StockAlertLevel } from "@/core/services/stock-alerts";
 import {
   buildStockAlertTexts,
@@ -77,8 +78,15 @@ function alert(overrides: Partial<StockAlert> = {}): StockAlert {
 function viewOf(
   locale: keyof typeof DICTIONARIES,
   overrides: Partial<StockAlert> = {},
+  recommendation?: ReorderRecommendation,
 ) {
-  return toStockAlertView(alert(overrides), locale as Locale, textsFor(locale), 30);
+  return toStockAlertView(
+    alert(overrides),
+    locale as Locale,
+    textsFor(locale),
+    30,
+    recommendation,
+  );
 }
 
 describe("stok uyarısı — durum ve ton stok tahmininden ödünç alınır", () => {
@@ -141,4 +149,43 @@ describe("stok uyarısı — gerekçe ve aksiyon (TR/EN)", () => {
       expect(new Set(reasons).size).toBe(levels.length);
     });
   }
+});
+
+describe("stok uyarısı — yeniden sipariş önerisi", () => {
+  const SUGGESTED: ReorderRecommendation = {
+    kind: "suggested",
+    quantity: 39,
+    targetStockUnits: 50.4,
+    dailyVelocity: 2.4,
+    targetCoverageDays: 21,
+    currentStock: 12,
+  };
+
+  it("öneri verilmezse satır boş kalır", () => {
+    const view = viewOf("tr", { level: "critical", daysRemaining: 5 });
+    expect(view.reorderQuantityLabel).toBeNull();
+    expect(view.reorderBasisLabel).toBeNull();
+  });
+
+  it("suggested öneri verilirse adet ve dayanak metni dolar", () => {
+    const view = viewOf("tr", { level: "critical", daysRemaining: 5 }, SUGGESTED);
+    expect(view.reorderQuantityLabel).toContain("39");
+    expect(view.reorderBasisLabel).not.toBeNull();
+  });
+
+  it("correctStock/needsStockData/none önerilerinde satır boş kalır", () => {
+    for (const recommendation of [
+      { kind: "correctStock" },
+      { kind: "needsStockData" },
+      { kind: "none" },
+    ] as const) {
+      const view = viewOf(
+        "tr",
+        { level: "negative", daysRemaining: null },
+        recommendation,
+      );
+      expect(view.reorderQuantityLabel).toBeNull();
+      expect(view.reorderBasisLabel).toBeNull();
+    }
+  });
 });

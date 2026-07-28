@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 
+import type { ReorderRecommendation } from "@/core/services/reorder-suggestion";
 import type { StockAlert } from "@/core/services/stock-alerts";
 import type { AnalysisSelection } from "@/core/services/analysis-window";
 import { withAnalysisQuery } from "@/features/analysis/analysis-params";
@@ -37,6 +38,7 @@ export function StockAlertsCard({
   hasData,
   locale,
   selection,
+  reorderRecommendations,
 }: {
   alerts: readonly StockAlert[];
   /** Hızın hesaplandığı pencere — dipnotta "son X güne göre" cümlesinin X'i. */
@@ -48,13 +50,21 @@ export function StockAlertsCard({
   hasData: boolean;
   locale: Locale;
   selection: AnalysisSelection;
+  /** Ürün kimliğine göre yeniden sipariş önerisi — toplu hesaptan gelir. */
+  reorderRecommendations: ReadonlyMap<string, ReorderRecommendation>;
 }) {
   const t = useTranslations("stockAlerts");
   const products = useTranslations("products");
 
   const coverageTexts = buildStockCoverageTexts(products);
   const texts = buildStockAlertTexts(t, coverageTexts);
-  const views: StockAlertView[] = toStockAlertViews(alerts, locale, texts, windowDays);
+  const views: StockAlertView[] = toStockAlertViews(
+    alerts,
+    locale,
+    texts,
+    windowDays,
+    reorderRecommendations,
+  );
 
   const urgent = views[0]?.state === "negative" || views[0]?.state === "critical";
 
@@ -96,6 +106,19 @@ export function StockAlertsCard({
 
                     <p className="text-fg-muted mt-1.5 text-sm">{view.reason}</p>
                     <p className="text-fg mt-1 text-sm font-medium">{view.action}</p>
+
+                    {view.reorderQuantityLabel ? (
+                      <div className="mt-1">
+                        <p className="text-fg text-sm font-medium">
+                          {view.reorderQuantityLabel}
+                        </p>
+                        {view.reorderBasisLabel ? (
+                          <p className="text-fg-subtle text-xs">
+                            {view.reorderBasisLabel}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
 
                   <Button asChild size="sm">
