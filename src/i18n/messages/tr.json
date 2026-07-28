@@ -295,6 +295,28 @@
     "packagingHint": "Adet başına.",
     "effectiveHint": "Bu tarihten itibaren geçerli olur. Önceki tarihli siparişler eski maliyetle hesaplanmaya devam eder.",
     "pastDateWarning": "Geçmiş bir tarih girdiniz: o tarihten sonraki siparişlerin kâr analizleri yeniden hesaplanacak.",
+    "historyTitle": "Maliyet geçmişi",
+    "historyDescription": "Bu ürüne özel maliyet kayıtları, en yeni üstte. Geçmiş kayıtlar salt okunurdur.",
+    "historyLoading": "Maliyet geçmişi yükleniyor…",
+    "historyError": "Maliyet geçmişi yüklenemedi.",
+    "historyEmpty": "Bu ürün için henüz maliyet geçmişi bulunmuyor.",
+    "historyEmptyHint": "Yukarıdaki formla ilk kaydı oluşturduğunuzda burada görünecek.",
+    "historySourceLabel": "Kayıt kaynağı",
+    "historyStatus": {
+      "active": "Şu anda kullanılıyor",
+      "past": "Geçmiş",
+      "upcoming": "Henüz başlamadı"
+    },
+    "historyUsed": {
+      "active": "Bu kayıt {date} tarihinden itibaren hesaplamalarda kullanılıyor.",
+      "past": "Bu kayıt {date} tarihinden itibaren hesaplamalarda kullanıldı.",
+      "upcoming": "Bu kayıt {date} tarihinden itibaren hesaplamalarda kullanılacak."
+    },
+    "historySource": {
+      "manual": "Elle girildi",
+      "import": "İçe aktarıldı",
+      "seed": "Demo verisi"
+    },
     "vatNotice": "Tüm hesaplar KDV hariç modeldir. Rakamlar operasyon kararı içindir, kesin muhasebe sonucu değildir.",
     "missingSummary": "{count} üründe maliyet eksik · {revenue} ciro değerlendirilemiyor",
     "allComplete": "Tüm ürünlerin maliyeti girilmiş",

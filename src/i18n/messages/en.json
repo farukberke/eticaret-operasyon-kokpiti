@@ -295,6 +295,28 @@
     "packagingHint": "Per unit.",
     "effectiveHint": "Applies from this date on. Earlier orders keep using the earlier cost.",
     "pastDateWarning": "You entered a past date: profit analyses for orders after that date will be recalculated.",
+    "historyTitle": "Cost history",
+    "historyDescription": "Cost records for this product, newest first. Past records are read-only.",
+    "historyLoading": "Loading cost history…",
+    "historyError": "Cost history could not be loaded.",
+    "historyEmpty": "There is no cost history for this product yet.",
+    "historyEmptyHint": "Save the first record with the form above and it will show up here.",
+    "historySourceLabel": "Record source",
+    "historyStatus": {
+      "active": "In use right now",
+      "past": "Past",
+      "upcoming": "Not started yet"
+    },
+    "historyUsed": {
+      "active": "This record has been used in calculations since {date}.",
+      "past": "This record was used in calculations from {date} on.",
+      "upcoming": "This record will be used in calculations from {date} on."
+    },
+    "historySource": {
+      "manual": "Entered manually",
+      "import": "Imported",
+      "seed": "Demo data"
+    },
     "vatNotice": "All figures exclude VAT. They are for operational decisions, not accounting.",
     "missingSummary": "{count} products missing cost · {revenue} revenue can't be evaluated",
     "allComplete": "Every product has a cost",

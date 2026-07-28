@@ -97,6 +97,30 @@ export function findEffectiveDefault(
   return findEffective(matching, date);
 }
 
+/**
+ * Bir ürünün belirtilen tarihte **yürürlükteki** maliyet kaydı.
+ *
+ * `findEffectiveDefault` ile aynı gerekçeyle burada duruyor: **yürürlük kuralı
+ * tek yerde kalsın.** Maliyet geçmişi ekranı "şu an hangi kayıt kullanılıyor"
+ * diye soruyor; bu soruyu kendi başına cevaplasaydı, zamanla kâr hesabının
+ * yürürlükte saydığı kayıttan başka bir kaydı "Şu anda kullanılıyor" diye
+ * rozetleyebilirdi. Kullanıcının ekranda gördüğü kayıt ile hesabın kullandığı
+ * kayıt ayrılırsa, ekranın söylediği hiçbir şeyin değeri kalmaz.
+ *
+ * Çözümleme zincirine karışmaz, yalnızca okur: geri çekilme (kategori/mağaza)
+ * burada yoktur, çünkü soru "bu ürünün kendi kaydı" hakkındadır.
+ */
+export function findEffectiveProductCost(
+  costs: readonly ProductCost[],
+  productId: string,
+  date: IsoDate,
+): ProductCost | undefined {
+  const matching = costs
+    .filter((entry) => entry.productId === productId)
+    .sort(byEffectiveFromDesc);
+  return findEffective(matching, date);
+}
+
 export function createCostResolver(
   table: CostTable,
   /** Ürün → kategori eşlemesi; kategori varsayılanlarına inebilmek için. */

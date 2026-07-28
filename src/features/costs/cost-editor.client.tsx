@@ -10,6 +10,7 @@ import { parseMoneyToMinor, parsePercent } from "@/lib/format";
 import { Button } from "@/ui/primitives/button";
 
 import { saveCost } from "./actions";
+import { CostHistory } from "./cost-history.client";
 
 /**
  * Tek ürünün maliyet düzenleme formu.
@@ -22,6 +23,11 @@ import { saveCost } from "./actions";
  *    siparişlerin kâr analizi yeniden hesaplanacak.
  * 3. Komisyon/kargo/paketleme boş bırakılabilir — o zaman kategori, o da
  *    yoksa mağaza varsayılanı kullanılır.
+ *
+ * Formun altında ürünün **maliyet geçmişi** duruyor. Aynı yerde olmasının
+ * sebebi kaydetme anı: kullanıcı yeni bir tarihli kayıt açarken zaten hangi
+ * kaydın ne zamandan beri geçerli olduğunu bilmek zorunda. Geçmiş ayrı bir
+ * ekranda olsaydı, bu iki bilgi arasında gidip gelmek gerekirdi.
  */
 export interface CostEditorRow {
   readonly productId: string;
@@ -158,6 +164,14 @@ export function CostEditor({
           {t("cancel")}
         </Button>
       </div>
+
+      {/*
+        Geçmiş yalnızca form açıkken var olur; istek de o anda ve yalnızca bu
+        ürün için gider. Listedeki her ürünün geçmişini önceden hazırlamak,
+        kullanıcının en fazla birine bakacağı veriyi yüzlerce kez hesaplamak
+        olurdu.
+      */}
+      <CostHistory productId={row.productId} />
     </div>
   );
 }
