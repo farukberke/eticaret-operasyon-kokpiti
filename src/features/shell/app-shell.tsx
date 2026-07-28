@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
-import { container, DEFAULT_ANALYSIS_DAYS } from "@/data/container";
+import { container } from "@/data/container";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { formatFullDate } from "@/lib/format/date";
@@ -25,10 +25,7 @@ export async function AppShell({
   locale: Locale;
   children: ReactNode;
 }) {
-  const [t, common] = await Promise.all([
-    getTranslations("app"),
-    getTranslations("common"),
-  ]);
+  const t = await getTranslations("app");
 
   const today = container.clock.today();
 
@@ -46,12 +43,15 @@ export async function AppShell({
       <div className="flex min-w-0 flex-col">
         <header className="border-border bg-canvas/85 sticky top-0 z-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3 backdrop-blur sm:px-6">
           <p className="text-fg-muted text-sm">{formatFullDate(today, locale)}</p>
-          <div className="flex items-center gap-3">
-            <span className="text-fg-subtle hidden text-xs sm:inline">
-              {common("period", { days: DEFAULT_ANALYSIS_DAYS })}
-            </span>
-            <LocaleSwitcher current={locale} />
-          </div>
+          {/*
+            Buradaki sabit "Son 30 gün" rozeti kaldırıldı.
+
+            Kabuk bir layout: `searchParams` okuyamaz, dolayısıyla kullanıcının
+            seçtiği dönemi bilemez. Kullanıcı kokpitte "Son 7 gün"e geçtiğinde
+            üst şerit hâlâ "Son 30 gün" diyordu — ekranın iki yeri iki farklı
+            dönem söylüyordu. Dönem artık onu değiştirebilen yerde yazıyor.
+          */}
+          <LocaleSwitcher current={locale} />
         </header>
 
         {/* Mobil gezinme: menü yerine kaydırılabilir şerit. */}

@@ -28,6 +28,22 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu"
   },
+  "analysis": {
+    "label": "Analysis period",
+    "preset": {
+      "last7": "Last 7 days",
+      "last30": "Last 30 days",
+      "last90": "Last 90 days",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "custom": "Custom date range"
+    },
+    "from": "Start",
+    "to": "End",
+    "apply": "Apply",
+    "invalidRange": "The start date can't be later than the end date.",
+    "windowNote": "Based on {range}."
+  },
   "cockpit": {
     "greeting": "Good morning",
     "todayIs": "{date}",

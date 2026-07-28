@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { MissingCostImpact, MissingCostReport } from "@/core/domain";
+import type { AnalysisSelection } from "@/core/services/analysis-window";
 import { MissingCostCard } from "@/features/cockpit/missing-cost-card";
 import type { Locale } from "@/i18n/routing";
 import en from "@/i18n/messages/en.json";
@@ -53,10 +54,17 @@ function report(overrides: Partial<MissingCostReport> = {}): MissingCostReport {
   };
 }
 
-function renderCard(data: MissingCostReport, locale: Locale = "tr") {
+/** Varsayılan pencere — adrese hiçbir parametre yazmaz. */
+const DEFAULT_WINDOW: AnalysisSelection = { preset: "last30" };
+
+function renderCard(
+  data: MissingCostReport,
+  locale: Locale = "tr",
+  selection: AnalysisSelection = DEFAULT_WINDOW,
+) {
   return render(
     <NextIntlClientProvider locale={locale} messages={MESSAGES[locale]}>
-      <MissingCostCard report={data} locale={locale} />
+      <MissingCostCard report={data} locale={locale} selection={selection} />
     </NextIntlClientProvider>,
   );
 }
@@ -135,6 +143,32 @@ describe("kokpit eksik maliyet kartı", () => {
     expect(cta.getAttribute("href")).toBe("/tr/costs?product=p2#cost-p2");
     // Çapanın karşılığı gerçekten bu satır.
     expect(second.id).toBe("cost-p2");
+  });
+
+  it("analiz penceresini maliyet ekranına taşır", () => {
+    // Kokpitte "Son 7 gün"e bakan kullanıcı, tıkladığı ürünü maliyet
+    // ekranında **aynı** kuyrukta bulmalı; 30 günlük bir listede satır
+    // bambaşka bir sırada durur ve iki ekran farklı bir "önce bunu yap" der.
+    renderCard(report({ items: queue(7) }), "tr", { preset: "last7" });
+
+    expect(rows()[0]!.querySelector("a")?.getAttribute("href")).toBe(
+      "/tr/costs?product=p1&period=last7#cost-p1",
+    );
+    expect(
+      screen.getByRole("link", { name: /Diğer 2 ürün/ }).getAttribute("href"),
+    ).toBe("/tr/costs?period=last7");
+  });
+
+  it("özel aralıkta iki ucu da bağlantıya yazar", () => {
+    renderCard(report({ items: queue(3) }), "tr", {
+      preset: "custom",
+      from: "2026-05-01",
+      to: "2026-05-31",
+    });
+
+    expect(rows()[0]!.querySelector("a")?.getAttribute("href")).toBe(
+      "/tr/costs?product=p1&period=custom&from=2026-05-01&to=2026-05-31#cost-p1",
+    );
   });
 
   it("her satır servisin gerekçesini ve etkisini olduğu gibi taşır", () => {

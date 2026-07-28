@@ -54,11 +54,17 @@ export function CockpitQueue({
   today,
   locale,
   currency,
+  fullListHref,
 }: {
   views: readonly SignalView[];
   today: IsoDate;
   locale: string;
   currency: Currency;
+  /**
+   * Tam listenin adresi — analiz penceresini de taşır. Sunucuda kuruluyor:
+   * bileşen adres üretimini bilmemeli, yalnızca gideceği yeri.
+   */
+  fullListHref: string;
 }) {
   const t = useTranslations("queue");
   const cockpit = useTranslations("cockpit");
@@ -253,7 +259,7 @@ export function CockpitQueue({
       )}
 
       <Link
-        href="/priorities"
+        href={fullListHref}
         className="text-accent inline-flex items-center gap-1 self-start text-xs font-medium hover:underline"
       >
         {t("viewFullList")}

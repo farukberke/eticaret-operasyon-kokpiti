@@ -1,4 +1,9 @@
-import { lastDays, type DateRange } from "@/core/domain";
+import type { DateRange } from "@/core/domain";
+import {
+  analysisPresetDays,
+  defaultAnalysisWindow,
+  DEFAULT_ANALYSIS_PRESET,
+} from "@/core/services/analysis-window";
 import type {
   ClockPort,
   CostInsightPort,
@@ -60,12 +65,19 @@ export const container: Container = {
 /**
  * Panelin varsayılan analiz penceresi.
  *
- * 30 gün bilinçli: 7 gün haftalık dalgalanmada gürültülü, 90 gün ise dünün
- * sorununu ortalamanın içinde kaybediyor. 30 gün, "bu ay nasıl gidiyoruz"
- * sorusuna cevap verirken trendleri de görünür kılıyor.
+ * Gün sayısı da aralık da `core/services/analysis-window` içinden geliyor:
+ * kullanıcı bir dönem seçmediğinde görünen aralık ile seçicideki "Son 30 gün"
+ * seçeneğinin ürettiği aralık **aynı kodun** çıktısı olmalı, yoksa varsayılan
+ * ekran ile açıkça seçilmiş varsayılan farklı veri gösterebilir.
  */
-export const DEFAULT_ANALYSIS_DAYS = 30;
+export const DEFAULT_ANALYSIS_DAYS = analysisPresetDays(DEFAULT_ANALYSIS_PRESET) ?? 30;
 
+/**
+ * Dönem seçicisi olmayan ekranların aralığı.
+ *
+ * Seçiciyi taşıyan ekranlar bunun yerine adresten okunan pencereyi kullanır
+ * (`readAnalysisWindow`); ikisi de aynı çözümleyiciye dayanır.
+ */
 export function defaultRange(): DateRange {
-  return lastDays(container.clock.today(), DEFAULT_ANALYSIS_DAYS);
+  return defaultAnalysisWindow(container.clock.today()).range;
 }

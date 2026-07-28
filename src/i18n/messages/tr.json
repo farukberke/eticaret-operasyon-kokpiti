@@ -28,6 +28,22 @@
     "openMenu": "Menüyü aç",
     "closeMenu": "Menüyü kapat"
   },
+  "analysis": {
+    "label": "Analiz Dönemi",
+    "preset": {
+      "last7": "Son 7 gün",
+      "last30": "Son 30 gün",
+      "last90": "Son 90 gün",
+      "thisMonth": "Bu ay",
+      "lastMonth": "Geçen ay",
+      "custom": "Özel tarih aralığı"
+    },
+    "from": "Başlangıç",
+    "to": "Bitiş",
+    "apply": "Uygula",
+    "invalidRange": "Başlangıç tarihi bitiş tarihinden sonra olamaz.",
+    "windowNote": "{range} dönemine göre."
+  },
   "cockpit": {
     "greeting": "Günaydın",
     "todayIs": "{date}",

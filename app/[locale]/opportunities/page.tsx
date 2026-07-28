@@ -6,7 +6,11 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export default async function Page({ params }: PageProps<"/[locale]/opportunities">) {
-  const locale = await resolveLocale(params);
-  return <SignalPage kind="opportunities" locale={locale} />;
+/** Analiz penceresi kokpitteki "Tümü →" bağlantısıyla `?period=` olarak gelir. */
+export default async function Page({
+  params,
+  searchParams,
+}: PageProps<"/[locale]/opportunities">) {
+  const [locale, query] = await Promise.all([resolveLocale(params), searchParams]);
+  return <SignalPage kind="opportunities" locale={locale} searchParams={query} />;
 }

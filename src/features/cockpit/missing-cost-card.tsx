@@ -2,7 +2,9 @@ import { ArrowRight, CircleCheck, PackageOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import type { MissingCostReport } from "@/core/domain";
+import type { AnalysisSelection } from "@/core/services/analysis-window";
 import { DEFAULT_RULES } from "@/core/services/rules.config";
+import { withAnalysisQuery } from "@/features/analysis/analysis-params";
 import { costFocusHref } from "@/features/costs/cost-focus";
 import { MissingCostItem } from "@/features/costs/missing-cost-item";
 import { buildMissingCostRows } from "@/features/costs/missing-cost-view";
@@ -34,9 +36,19 @@ import { Button } from "@/ui/primitives/button";
 export function MissingCostCard({
   report,
   locale,
+  selection,
 }: {
   report: MissingCostReport;
   locale: Locale;
+  /**
+   * Kokpitte açık olan analiz penceresi.
+   *
+   * Rapor zaten bu pencereyle hesaplandı; buradaki tek işi **bağlantılara
+   * binmek**. Kullanıcı "Son 7 gün" kuyruğundan bir ürüne tıklayıp maliyet
+   * ekranında son 30 günün kuyruğunu bulursa, tıkladığı satır listede
+   * başka bir sırada durur ve iki ekran farklı bir "önce bunu yap" söyler.
+   */
+  selection: AnalysisSelection;
 }) {
   const t = useTranslations("cockpit");
   // Satır metinleri maliyet ekranıyla ortak sözlükten okunur: aynı iş, aynı
@@ -96,7 +108,9 @@ export function MissingCostCard({
                   <Button asChild size="sm">
                     {/* Bağlantı, düğme değil: yeni sekmede açılabilsin ve
                         klavyeyle gezilebilsin. */}
-                    <Link href={costFocusHref(row.productId)}>
+                    <Link
+                      href={withAnalysisQuery(costFocusHref(row.productId), selection)}
+                    >
                       {t("missingCostCta")}
                     </Link>
                   </Button>
@@ -107,7 +121,7 @@ export function MissingCostCard({
 
           {remaining > 0 && (
             <Link
-              href="/costs"
+              href={withAnalysisQuery("/costs", selection)}
               className="text-accent inline-flex items-center gap-1 self-start text-xs font-medium hover:underline"
             >
               {t("missingCostMore", { count: remaining })}

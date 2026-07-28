@@ -11,6 +11,22 @@
 /** `"YYYY-MM-DD"` biçiminde takvim günü. */
 export type IsoDate = string;
 
+const ISO_DATE_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Gün anahtarı gerçekten geçerli mi.
+ *
+ * Yalnızca biçim değil **takvim** de kontrol edilir: `"2026-02-31"` biçime
+ * uyar ama var olmayan bir gündür ve `new Date` onu sessizce 3 Mart'a
+ * kaydırır. Kullanıcının elle girdiği (ya da adres çubuğuna yapıştırdığı)
+ * tarih bu kapıdan geçmeden aralık hesabına giremez.
+ */
+export function isIsoDate(value: unknown): value is IsoDate {
+  if (typeof value !== "string" || !ISO_DATE_SHAPE.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && toIsoDate(parsed) === value;
+}
+
 export interface DateRange {
   /** Dahil. */
   readonly from: IsoDate;
@@ -81,6 +97,34 @@ export function eachDay(range: DateRange): IsoDate[] {
 /** Son N günü kapsayan aralık (bugün dahil). */
 export function lastDays(today: IsoDate, days: number): DateRange {
   return { from: addDays(today, -(days - 1)), to: today };
+}
+
+/**
+ * Takvim ayının ilk günü.
+ *
+ * Ay aritmetiği `Date` ile değil metinle yapılıyor: `setMonth` taşmayı
+ * kendince çözer (31 Ocak + 1 ay = 3 Mart) ve saat dilimi riskini geri
+ * getirir. Ay anahtarını kesip yeniden kurmak her iki tuzağı da atlar.
+ */
+function monthStart(year: number, monthIndex: number): IsoDate {
+  const shiftedYear = year + Math.floor(monthIndex / 12);
+  const normalized = ((monthIndex % 12) + 12) % 12;
+  return `${String(shiftedYear).padStart(4, "0")}-${String(normalized + 1).padStart(2, "0")}-01`;
+}
+
+/**
+ * Verilen günün ayını kapsayan aralık. `monthsAgo = 1` bir önceki ayı verir.
+ *
+ * Ayın son günü "sonraki ayın ilk günü − 1" ile bulunuyor; böylece 28/29/30/31
+ * ayrımı ve artık yıl kuralı hiçbir yerde elle yazılmıyor.
+ */
+export function monthRange(date: IsoDate, monthsAgo = 0): DateRange {
+  const year = Number(date.slice(0, 4));
+  const monthIndex = Number(date.slice(5, 7)) - 1 - monthsAgo;
+  return {
+    from: monthStart(year, monthIndex),
+    to: addDays(monthStart(year, monthIndex + 1), -1),
+  };
 }
 
 /**

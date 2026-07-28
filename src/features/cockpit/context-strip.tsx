@@ -1,7 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
 import type { ProfitSummary, SalesSummary } from "@/core/domain";
-import { DEFAULT_ANALYSIS_DAYS } from "@/data/container";
 import type { Locale } from "@/i18n/routing";
 import { formatDelta, formatMoney, formatPercent, formatPoints } from "@/lib/format";
 import { Card } from "@/ui/primitives/card";
@@ -45,10 +44,16 @@ export async function ContextStrip({
   sales,
   profit,
   locale,
+  periodLabel,
 }: {
   sales: SalesSummary;
   profit: ProfitSummary;
   locale: Locale;
+  /**
+   * Hangi aralığın toplamı olduğu. Sabit "Son 30 gün" yazısı, kullanıcı
+   * dönemi değiştirdiği anda yalan söylemeye başlıyordu.
+   */
+  periodLabel: string;
 }) {
   const [kpi, common] = await Promise.all([
     getTranslations("kpi"),
@@ -64,9 +69,7 @@ export async function ContextStrip({
 
   return (
     <div>
-      <p className="text-fg-subtle mb-1.5 text-xs">
-        {common("period", { days: DEFAULT_ANALYSIS_DAYS })}
-      </p>
+      <p className="text-fg-subtle mb-1.5 text-xs">{periodLabel}</p>
       <Card className="divide-border grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         <Stat
           label={kpi("netProfit")}

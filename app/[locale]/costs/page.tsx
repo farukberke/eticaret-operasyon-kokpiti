@@ -39,5 +39,11 @@ export default async function Page({
   const [locale, query] = await Promise.all([resolveLocale(params), searchParams]);
   const focusProductId = readFocusProductId(query);
 
-  return <CostsPage locale={locale} {...(focusProductId ? { focusProductId } : {})} />;
+  return (
+    <CostsPage
+      locale={locale}
+      searchParams={query}
+      {...(focusProductId ? { focusProductId } : {})}
+    />
+  );
 }

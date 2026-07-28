@@ -1,9 +1,17 @@
 import { ArrowRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
-import { container, defaultRange } from "@/data/container";
+import { selectionOf } from "@/core/services/analysis-window";
+import { container } from "@/data/container";
 import { Link } from "@/i18n/navigation";
 import { CURRENCY, type Locale } from "@/i18n/routing";
+import { AnalysisPicker } from "@/features/analysis/analysis-picker.client";
+import {
+  readAnalysisWindow,
+  withAnalysisQuery,
+  type SearchParamsRecord,
+} from "@/features/analysis/analysis-params";
+import { analysisRangeLabel } from "@/features/analysis/analysis-view";
 import { buildSignalViews } from "@/features/signals/build-views";
 import { SignalSummary } from "@/features/signals/signal-summary";
 import { SectionCard } from "@/ui/patterns/section-card";
@@ -43,14 +51,14 @@ import { MissingCostCard } from "./missing-cost-card";
  * Kokpitte aksiyon dışında ne varsa, aksiyonun yerini çalar.
  */
 
-/** Bölüm başlıklarındaki "Tümü →" bağlantısı. */
-function DetailLink({
-  href,
-  label,
-}: {
-  href: "/priorities" | "/risks" | "/opportunities";
-  label: string;
-}) {
+/**
+ * Bölüm başlıklarındaki "Tümü →" bağlantısı.
+ *
+ * `href` metin: analiz penceresi sorgu olarak eklendiği için sabit rota
+ * birleşimi yetmez. Detay sayfaları da aynı pencereyi görsün diye bağlantı
+ * `withAnalysisQuery` ile kuruluyor.
+ */
+function DetailLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
@@ -62,8 +70,24 @@ function DetailLink({
   );
 }
 
-export async function CockpitPage({ locale }: { locale: Locale }) {
-  const range = defaultRange();
+export async function CockpitPage({
+  locale,
+  searchParams,
+}: {
+  locale: Locale;
+  /** Analiz penceresi adres çubuğunda yaşar; sunucu onu buradan okur. */
+  searchParams: SearchParamsRecord;
+}) {
+  const today = container.clock.today();
+
+  /**
+   * Ekranın tek tarih hesabı. Aşağıdaki altı port çağrısı da, eksik maliyet
+   * kartı da, kartın bağlantılarının götürdüğü ekranlar da aynı `range`i
+   * kullanır — hiçbiri kendi aralığını üretmez.
+   */
+  const analysisWindow = readAnalysisWindow(searchParams, today);
+  const range = analysisWindow.range;
+  const selection = selectionOf(analysisWindow);
 
   // Portlar birbirinden bağımsız; hepsi paralel çekilir.
   const [priorities, risks, opportunities, sales, profit, missingCosts] =
@@ -96,8 +120,6 @@ export async function CockpitPage({ locale }: { locale: Locale }) {
     locale,
   );
 
-  const today = container.clock.today();
-
   return (
     /**
      * Kuyruk ve defter aynı görev durumunu paylaşır: bir iş kapatıldığında
@@ -107,14 +129,35 @@ export async function CockpitPage({ locale }: { locale: Locale }) {
      */
     <TaskStateProvider today={today}>
       <div className="flex flex-col gap-5">
+        {/*
+          ANALİZ DÖNEMİ — altındaki her rakamın hangi aralıktan geldiğini
+          söyleyen satır. En üstte, çünkü "bu sayı ne kadarlık bir dönemin?"
+          sorusu sayıyı okumadan önce cevaplanmalı.
+        */}
+        <AnalysisPicker
+          window={analysisWindow}
+          rangeLabel={analysisRangeLabel(analysisWindow, locale)}
+        />
+
         {/* 0 — ÖNCE BUNLARI TAMAMLAYIN */}
-        <MissingCostCard report={missingCosts} locale={locale} />
+        <MissingCostCard report={missingCosts} locale={locale} selection={selection} />
 
         {/* 1–2 — GÜNÜN CÜMLESİ + KUYRUK */}
-        <CockpitQueue views={views} today={today} locale={locale} currency={CURRENCY} />
+        <CockpitQueue
+          views={views}
+          today={today}
+          locale={locale}
+          currency={CURRENCY}
+          fullListHref={withAnalysisQuery("/priorities", selection)}
+        />
 
         {/* 3 — BAĞLAM */}
-        <ContextStrip sales={sales} profit={profit} locale={locale} />
+        <ContextStrip
+          sales={sales}
+          profit={profit}
+          locale={locale}
+          periodLabel={analysisRangeLabel(analysisWindow, locale)}
+        />
 
         {/* 4 — DAĞILIM */}
         <div className="grid gap-4 lg:grid-cols-2">
@@ -124,7 +167,10 @@ export async function CockpitPage({ locale }: { locale: Locale }) {
             count={risks.length}
             action={
               risks.length > 0 ? (
-                <DetailLink href="/risks" label={common("viewAll")} />
+                <DetailLink
+                  href={withAnalysisQuery("/risks", selection)}
+                  label={common("viewAll")}
+                />
               ) : undefined
             }
             flush
@@ -147,7 +193,10 @@ export async function CockpitPage({ locale }: { locale: Locale }) {
             count={opportunities.length}
             action={
               opportunities.length > 0 ? (
-                <DetailLink href="/opportunities" label={common("viewAll")} />
+                <DetailLink
+                  href={withAnalysisQuery("/opportunities", selection)}
+                  label={common("viewAll")}
+                />
               ) : undefined
             }
             flush

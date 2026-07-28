@@ -30,14 +30,24 @@ export function formatShortDate(isoDate: string, locale: string): string {
   }).format(parse(isoDate));
 }
 
-/** "1 – 30 Tem" biçiminde aralık etiketi. */
+/**
+ * "1 – 30 Tem" biçiminde aralık etiketi.
+ *
+ * Yıl yalnızca aralık yıl sınırını aştığında yazılır ("28 Ara 2025 – 26 Oca
+ * 2026"): 90 günlük bir pencere aralıkta iki yıla yayılabiliyor ve "28 Ara –
+ * 26 Oca" hangi Aralık olduğunu söylemiyor. Aynı yıl içindeki aralıkta ise yıl
+ * gürültüdür.
+ */
 export function formatDateRange(
   range: { from: string; to: string },
   locale: string,
 ): string {
+  const sameYear = range.from.slice(0, 4) === range.to.slice(0, 4);
+
   return new Intl.DateTimeFormat(locale, {
     ...UTC,
     day: "numeric",
     month: "short",
+    ...(sameYear ? {} : { year: "numeric" }),
   }).formatRange(parse(range.from), parse(range.to));
 }

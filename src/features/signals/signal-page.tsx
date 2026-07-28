@@ -1,7 +1,12 @@
 import { getTranslations } from "next-intl/server";
 
-import { compareMoney, type Signal } from "@/core/domain";
-import { container, defaultRange } from "@/data/container";
+import { compareMoney, type DateRange, type Signal } from "@/core/domain";
+import { container } from "@/data/container";
+import {
+  readAnalysisWindow,
+  type SearchParamsRecord,
+} from "@/features/analysis/analysis-params";
+import { analysisWindowNote } from "@/features/analysis/analysis-view";
 import type { Locale } from "@/i18n/routing";
 import { Card } from "@/ui/primitives/card";
 import { PageHeader } from "@/ui/patterns/page-header";
@@ -17,9 +22,7 @@ import { SignalList } from "./signal-list";
  */
 export type SignalPageKind = "risks" | "opportunities" | "priorities";
 
-async function loadSignals(kind: SignalPageKind): Promise<Signal[]> {
-  const range = defaultRange();
-
+async function loadSignals(kind: SignalPageKind, range: DateRange): Promise<Signal[]> {
   if (kind === "priorities") {
     // Öncelikler zaten motor tarafından sıralı gelir.
     const actions = await container.priorities.getPriorities(range);
@@ -38,15 +41,26 @@ async function loadSignals(kind: SignalPageKind): Promise<Signal[]> {
 export async function SignalPage({
   kind,
   locale,
+  searchParams,
 }: {
   kind: SignalPageKind;
   locale: Locale;
+  /** Kokpitteki "Tümü →" bağlantısı analiz penceresini buraya taşır. */
+  searchParams: SearchParamsRecord;
 }) {
-  const [signals, t] = await Promise.all([loadSignals(kind), getTranslations(kind)]);
+  const analysisWindow = readAnalysisWindow(searchParams, container.clock.today());
+  const [signals, t, note] = await Promise.all([
+    loadSignals(kind, analysisWindow.range),
+    getTranslations(kind),
+    analysisWindowNote(analysisWindow, locale),
+  ]);
 
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} />
+      {/* Sayfa açıklaması hangi dönemin sinyalleri olduğunu da söyler:
+          kokpitten "Son 7 gün" ile gelen kullanıcı burada 30 günlük bir
+          liste görüp aynı işleri sayamadığında panele güvenmeyi bırakır. */}
+      <PageHeader title={t("title")} description={`${t("description")} ${note}`} />
       <Card className="px-4">
         <SignalList
           signals={signals}

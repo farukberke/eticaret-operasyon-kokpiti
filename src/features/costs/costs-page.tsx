@@ -3,7 +3,12 @@ import { getTranslations } from "next-intl/server";
 
 import { toRatio } from "@/core/domain";
 import { DEFAULT_RULES } from "@/core/services/rules.config";
-import { container, defaultRange, loadCostSource } from "@/data/container";
+import { container, loadCostSource } from "@/data/container";
+import {
+  readAnalysisWindow,
+  type SearchParamsRecord,
+} from "@/features/analysis/analysis-params";
+import { analysisWindowNote } from "@/features/analysis/analysis-view";
 import { EMPTY, formatMoney, formatPercent, formatShortDate } from "@/lib/format";
 import type { Locale } from "@/i18n/routing";
 import { Card } from "@/ui/primitives/card";
@@ -28,29 +33,41 @@ import { templateCsv } from "./import-actions";
  */
 export async function CostsPage({
   locale,
+  searchParams,
   focusProductId,
 }: {
   locale: Locale;
+  /** Analiz penceresi kokpitten bağlantıyla taşınır; sunucu onu buradan okur. */
+  searchParams: SearchParamsRecord;
   /**
    * Kokpitteki "Tamamla" ile gelindiğinde formu açık başlayacak ürün.
    * Adres çubuğunda durur: bağlantı paylaşılabilir, yenilenince kaybolmaz.
    */
   focusProductId?: string | undefined;
 }) {
-  const range = defaultRange();
-  const [performance, profit, missing, template, costSource, t] = await Promise.all([
-    container.products.getPerformance(range),
-    container.profit.getSummary(range),
-    container.costInsights.getMissingCosts(range),
-    templateCsv(),
-    // Varsayılan ayarları kâr hesabının gördüğü **aynı** tablodan okunur:
-    // kullanıcı ekranda %15 görürken kârın %11 ile hesaplandığı bir panel
-    // güvenilemez olurdu.
-    loadCostSource(),
-    getTranslations("costs"),
-  ]);
-
   const today = container.clock.today();
+
+  /**
+   * Kokpitle **aynı** pencere. Kullanıcı kokpitte "Son 7 gün"e bakıp bir
+   * ürüne tıkladığında buradaki kuyruk da son 7 günü göstermeli; aksi hâlde
+   * tıkladığı satır bu ekranda bambaşka bir sırada durur.
+   */
+  const analysisWindow = readAnalysisWindow(searchParams, today);
+  const range = analysisWindow.range;
+
+  const [performance, profit, missing, template, costSource, t, windowNote] =
+    await Promise.all([
+      container.products.getPerformance(range),
+      container.profit.getSummary(range),
+      container.costInsights.getMissingCosts(range),
+      templateCsv(),
+      // Varsayılan ayarları kâr hesabının gördüğü **aynı** tablodan okunur:
+      // kullanıcı ekranda %15 görürken kârın %11 ile hesaplandığı bir panel
+      // güvenilemez olurdu.
+      loadCostSource(),
+      getTranslations("costs"),
+      analysisWindowNote(analysisWindow, locale),
+    ]);
 
   const defaultsView = buildCostDefaultsView({
     defaults: costSource.costs.defaults,
@@ -130,7 +147,13 @@ export async function CostsPage({
 
         <SectionCard
           title={t("priorityTitle")}
-          description={t("priorityDescription")}
+          /**
+           * Kuyruğun hangi döneme ait olduğu başlıkta yazıyor. Seçici
+           * kokpitte; buraya ikinci bir kopyasını koymak, kullanıcının işini
+           * yaptığı ekranda ona ikinci bir karar sordurmak olurdu — ama hangi
+           * pencereye baktığını bilmeden de çalışamaz.
+           */
+          description={`${t("priorityDescription")} ${windowNote}`}
           {...(missingRows.length > 0 ? { count: missing.items.length } : {})}
         >
           {!hasData ? (

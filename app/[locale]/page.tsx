@@ -10,8 +10,12 @@ export function generateStaticParams() {
  * Rota dosyaları bilinçli olarak incedir: locale'i çözer ve feature'ı çağırır.
  * Ekranın kendisi `src/features/cockpit` içinde yaşar — böylece Next.js'in
  * dosya sistemi kuralları ürün mantığının yerini belirlemez.
+ *
+ * `?period=` (ve özel aralıkta `?from=&to=`) analiz penceresini taşır. Durum
+ * bileşende değil adreste: sunucu veriyi seçilen aralıkla çeker, bağlantı
+ * paylaşılabilir ve yenilemede kaybolmaz.
  */
-export default async function Page({ params }: PageProps<"/[locale]">) {
-  const locale = await resolveLocale(params);
-  return <CockpitPage locale={locale} />;
+export default async function Page({ params, searchParams }: PageProps<"/[locale]">) {
+  const [locale, query] = await Promise.all([resolveLocale(params), searchParams]);
+  return <CockpitPage locale={locale} searchParams={query} />;
 }
