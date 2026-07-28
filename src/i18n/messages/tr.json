@@ -283,6 +283,18 @@
       "snoozedActions": "{count} görev ertelendi."
     }
   },
+  "taskTimeline": {
+    "title": "Günlük Zaman Akışı",
+    "helperText": "Bugünün görev sırası",
+    "group": {
+      "now": "Şimdi",
+      "today": "Bugün",
+      "later": "Daha Sonra",
+      "completed": "Tamamlananlar"
+    },
+    "emptyActive": "Aktif görev bulunmuyor.",
+    "emptyCompleted": "Tamamlanan görev bulunmuyor."
+  },
   "purchasePriority": {
     "rankBadge": "Öncelik #{rank}",
     "impact": {

@@ -283,6 +283,18 @@
       "snoozedActions": "{count} tasks snoozed."
     }
   },
+  "taskTimeline": {
+    "title": "Daily Task Timeline",
+    "helperText": "Today's task order",
+    "group": {
+      "now": "Now",
+      "today": "Today",
+      "later": "Later",
+      "completed": "Completed"
+    },
+    "emptyActive": "No active tasks.",
+    "emptyCompleted": "No completed tasks."
+  },
   "purchasePriority": {
     "rankBadge": "Priority #{rank}",
     "impact": {

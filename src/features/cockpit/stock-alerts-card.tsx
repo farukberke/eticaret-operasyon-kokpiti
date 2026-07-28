@@ -41,6 +41,8 @@ import {
   buildPurchasePriorityTexts,
   toPurchasePriorityViews,
 } from "./purchase-priority-view";
+import { TaskTimeline } from "./task-timeline.client";
+import { buildTaskTimelineTexts } from "./task-timeline-view";
 
 /**
  * "STOKTA ÖNCE BUNLARA BAKIN" — stok tahminini ürün tablosundan kokpite taşıyan
@@ -149,6 +151,7 @@ export function StockAlertsCard({
   const products = useTranslations("products");
   const priority = useTranslations("purchasePriority");
   const morningBrief = useTranslations("morningBrief");
+  const taskTimeline = useTranslations("taskTimeline");
 
   const coverageTexts = buildStockCoverageTexts(products);
   const texts = buildStockAlertTexts(t, coverageTexts);
@@ -184,6 +187,13 @@ export function StockAlertsCard({
   const actionStatusTexts = buildPurchaseActionStatusTexts(t);
   const actionPlanProductIds = actionPlan.items.map((item) => item.productId);
   const morningBriefTexts = buildMorningBriefTexts(morningBrief);
+  const taskTimelineTexts = buildTaskTimelineTexts(taskTimeline);
+  /**
+   * Ürün kimliğine göre ad haritası — `views`den (zaten `toStockAlertViews`
+   * tarafından çevrilmiş) kurulur, ikinci bir çeviri yapılmaz. Task Timeline
+   * satırları bu haritayı yalnızca `.get()` ile okur.
+   */
+  const productNames = new Map(views.map((view) => [view.productId, view.productName]));
 
   const urgent = views[0]?.state === "negative" || views[0]?.state === "critical";
 
@@ -211,6 +221,23 @@ export function StockAlertsCard({
               locale={locale}
               texts={morningBriefTexts}
               actionPlanRowViews={actionPlanRowViews}
+            />
+
+            {/*
+              GÜNLÜK ZAMAN AKIŞI — planı gün içindeki ele alma sırasına göre
+              gruplar. Morning Brief'in "ne durumdayım" cevabından sonra,
+              aşağıdaki ayrıntılı plan/durum listesinden önce durur — akış
+              tam olarak bu sırayı izler.
+            */}
+            <TaskTimeline
+              actionPlan={actionPlan}
+              locale={locale}
+              texts={taskTimelineTexts}
+              statusTexts={actionStatusTexts}
+              productNames={productNames}
+              actionPlanRowViews={actionPlanRowViews}
+              priorityViews={priorityViews}
+              leadTimeViews={leadTimeViews}
             />
 
             {/*

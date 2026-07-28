@@ -10,6 +10,7 @@ import type { PurchasePriorityItem } from "@/core/services/purchase-priority";
 import type { ReorderRecommendation } from "@/core/services/reorder-suggestion";
 import type { StockAlert } from "@/core/services/stock-alerts";
 import type { AnalysisSelection } from "@/core/services/analysis-window";
+import { DEFAULT_RULES } from "@/core/services/rules.config";
 import { StockAlertsCard } from "@/features/cockpit/stock-alerts-card";
 import type { Locale } from "@/i18n/routing";
 import en from "@/i18n/messages/en.json";
@@ -790,6 +791,233 @@ describe("kokpit stok uyarısı kartı", () => {
       renderCard([alert({ productId: "p1", level: "critical" })]);
       expect(screen.getByText(tr.morningBrief.title)).toBeDefined();
       expect(screen.getByText(tr.morningBrief.allClear)).toBeDefined();
+    });
+  });
+
+  describe("Günlük Zaman Akışı (Task Timeline)", () => {
+    const NOW_LIMIT = DEFAULT_RULES.taskTimeline.nowLimit;
+
+    function timelineActionItem(
+      overrides: Partial<ActionPlanItem> = {},
+    ): ActionPlanItem {
+      return {
+        productId: "p1",
+        rank: 1,
+        action: "actNow",
+        recommendedQuantity: null,
+        alertState: "critical",
+        leadTimeState: "late",
+        daysRemaining: 5,
+        orderDecisionDays: -2,
+        shortageGapDays: 2,
+        reason: "leadTimeAlreadyLate",
+        ...overrides,
+      };
+    }
+
+    /** `count` adet ürün + eşleşen alert/actionPlan girdisi — rank 1..count. */
+    function pendingSet(count: number) {
+      const alerts = Array.from({ length: count }, (_, i) =>
+        alert({
+          productId: `p${i + 1}`,
+          productName: `Ürün ${i + 1}`,
+          level: "critical",
+          daysRemaining: 5,
+        }),
+      );
+      const items = Array.from({ length: count }, (_, i) =>
+        timelineActionItem({ productId: `p${i + 1}`, rank: i + 1 }),
+      );
+      return { alerts, actionPlan: actionPlanBatch(items) };
+    }
+
+    function timeline(): HTMLElement {
+      return screen.getByTestId("task-timeline");
+    }
+
+    it("kart görünür: başlık ve yardımcı metin basılır", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, { actionPlan });
+
+      expect(within(timeline()).getByText(tr.taskTimeline.title)).toBeDefined();
+      expect(within(timeline()).getByText(tr.taskTimeline.helperText)).toBeDefined();
+    });
+
+    it("Sabah Özeti ve ayrıntılı Satın Alma Planı Task Timeline'ın yanında görünmeye devam eder", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, { actionPlan });
+
+      expect(screen.getByText(tr.morningBrief.title)).toBeDefined();
+      expect(rows()).toHaveLength(1);
+    });
+
+    it("now grubu: en yüksek rütbeli pending aksiyonlar 'Şimdi' altında görünür", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, { actionPlan });
+
+      const card = timeline();
+      expect(within(card).getByText(tr.taskTimeline.group.now)).toBeDefined();
+      expect(within(card).getByText("Ürün 1")).toBeDefined();
+    });
+
+    it("today grubu: now sınırını aşan pending aksiyon 'Bugün' altında görünür", () => {
+      const { alerts, actionPlan } = pendingSet(NOW_LIMIT + 1);
+      renderCard(alerts, { actionPlan });
+
+      const card = timeline();
+      expect(within(card).getByText(tr.taskTimeline.group.today)).toBeDefined();
+      expect(within(card).getByText(`Ürün ${NOW_LIMIT + 1}`)).toBeDefined();
+    });
+
+    it("later grubu: ertelenen aksiyon rütbesinden bağımsız 'Daha Sonra' altında görünür", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, { actionPlan });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.snooze,
+        }),
+      );
+
+      const card = timeline();
+      expect(within(card).getByText(tr.taskTimeline.group.later)).toBeDefined();
+      expect(within(card).getByText("Ürün 1")).toBeDefined();
+      expect(within(card).queryByText(tr.taskTimeline.group.now)).toBeNull();
+    });
+
+    it("completed grubu: yapıldı işaretlenen aksiyon 'Tamamlananlar' altında görünür, aktif gruplarda görünmez", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, { actionPlan });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.done,
+        }),
+      );
+
+      const card = timeline();
+      expect(within(card).getByText(tr.taskTimeline.emptyActive)).toBeDefined();
+      expect(within(card).getByText("Ürün 1")).toBeDefined();
+      expect(within(card).queryByText(tr.taskTimeline.group.now)).toBeNull();
+    });
+
+    it("ignored aksiyon Task Timeline içinde hiç görünmez", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, { actionPlan });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.ignore,
+        }),
+      );
+
+      expect(screen.queryByText("Ürün 1")).toBeNull();
+    });
+
+    it("aynı aksiyon Task Timeline içinde yalnızca bir kez render edilir", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, { actionPlan });
+
+      // Biri ayrıntılı satır listesinde, biri Task Timeline'da — toplam iki.
+      expect(screen.getAllByText("Ürün 1")).toHaveLength(2);
+    });
+
+    it("rank (Öncelik #N rozeti) Task Timeline satırında korunur", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, {
+        actionPlan,
+        purchasePriorities: [
+          {
+            productId: "p1",
+            productName: "Ürün 1",
+            level: "critical",
+            stock: 5,
+            daysRemaining: 5,
+            dailyVelocity: 2,
+            reorderQuantity: null,
+            leadTimeStatus: "late",
+            orderDecisionDays: -2,
+            shortageGapDays: 2,
+            rank: 1,
+          },
+        ],
+      });
+
+      expect(within(timeline()).getByText("Öncelik #1")).toBeDefined();
+    });
+
+    it("önerilen miktar Task Timeline satırında korunur", () => {
+      const { alerts } = pendingSet(1);
+      renderCard(alerts, {
+        actionPlan: actionPlanBatch([timelineActionItem({ recommendedQuantity: 24 })]),
+        reorderRecommendations: new Map([
+          [
+            "p1",
+            {
+              kind: "suggested",
+              quantity: 24,
+              targetStockUnits: 30,
+              dailyVelocity: 2,
+              targetCoverageDays: 15,
+              currentStock: 5,
+            },
+          ],
+        ]),
+      });
+
+      expect(within(timeline()).getByText(/Önerilen sipariş: 24 adet/)).toBeDefined();
+    });
+
+    it("tedarik süresi görünümü Task Timeline satırında korunur", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, {
+        actionPlan,
+        leadTimeRisks: new Map([
+          [
+            "p1",
+            {
+              state: "late",
+              leadTimeDays: 7,
+              daysOfCover: 4,
+              shortageGapDays: 3,
+              orderDecisionDays: -3,
+            },
+          ],
+        ]),
+      });
+
+      expect(within(timeline()).getByText(/3/)).toBeDefined();
+    });
+
+    it("status değiştiğinde Task Timeline aynı provider üzerinden güncellenir", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, { actionPlan });
+
+      const card = timeline();
+      expect(within(card).getByText(tr.taskTimeline.group.now)).toBeDefined();
+      expect(
+        within(card).getByText(tr.stockAlerts.actionPlan.status.pending),
+      ).toBeDefined();
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.snooze,
+        }),
+      );
+
+      expect(within(card).getByText(tr.taskTimeline.group.later)).toBeDefined();
+      expect(
+        within(card).getByText(tr.stockAlerts.actionPlan.status.snoozed),
+      ).toBeDefined();
+    });
+
+    it("İngilizce: başlık, grup başlıkları ve boş durum metni çeviridir", () => {
+      const { alerts, actionPlan } = pendingSet(1);
+      renderCard(alerts, { actionPlan, locale: "en" });
+
+      const card = timeline();
+      expect(within(card).getByText(en.taskTimeline.title)).toBeDefined();
+      expect(within(card).getByText(en.taskTimeline.group.now)).toBeDefined();
     });
   });
 });

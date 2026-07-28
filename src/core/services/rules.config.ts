@@ -16,6 +16,7 @@ export interface RulesConfig {
   readonly opportunity: OpportunityRules;
   readonly priority: PriorityRules;
   readonly cost: CostRules;
+  readonly taskTimeline: TaskTimelineRules;
 }
 
 /**
@@ -128,6 +129,29 @@ export interface CostRules {
   readonly actionLimit: number;
 }
 
+/**
+ * Günlük Zaman Akışı (Task Timeline) grup sınırları.
+ *
+ * Yeni bir öncelik/aciliyet hesabı değil: `purchase-action-plan.ts`in zaten
+ * rütbelediği (`rank`) `pending` aksiyonları kaç tanesinin `now`, kaç
+ * tanesinin `today` grubuna düşeceğini belirleyen **sunum** sınırı — sıranın
+ * kendisini değiştirmez, yalnızca nereden böleceğini söyler.
+ */
+export interface TaskTimelineRules {
+  /**
+   * `now` grubuna giren en yüksek rütbeli `pending` aksiyon sayısı.
+   * `priority.cockpitLimit` ile aynı sayı: kokpitte zaten "Öncelik #1-3"
+   * rozetiyle öne çıkan ürünler, zaman akışında da ilk ele alınacak grupta
+   * durur — ikinci bir "en önemli N" tanımı icat edilmez.
+   */
+  readonly nowLimit: number;
+  /**
+   * `now`dan sonra `today` grubuna giren ek `pending` aksiyon sayısı. Bu
+   * sınırı aşan `pending` aksiyonlar `later`a düşer.
+   */
+  readonly todayLimit: number;
+}
+
 export const DEFAULT_RULES: RulesConfig = {
   inventory: {
     supplyLeadTimeDays: 7,
@@ -170,6 +194,11 @@ export const DEFAULT_RULES: RulesConfig = {
     notableOrderCount: 10,
     staleDays: 14,
     actionLimit: 5,
+  },
+
+  taskTimeline: {
+    nowLimit: 3, // priority.cockpitLimit ile aynı sayı
+    todayLimit: 5,
   },
 };
 
