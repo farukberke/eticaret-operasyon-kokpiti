@@ -1,10 +1,15 @@
 import { useTranslations } from "next-intl";
 
+import type { LeadTimeRisk } from "@/core/services/lead-time-risk";
 import type { PurchasePriorityItem } from "@/core/services/purchase-priority";
 import type { ReorderRecommendation } from "@/core/services/reorder-suggestion";
 import type { StockAlert } from "@/core/services/stock-alerts";
 import type { AnalysisSelection } from "@/core/services/analysis-window";
 import { withAnalysisQuery } from "@/features/analysis/analysis-params";
+import {
+  buildLeadTimeRiskTexts,
+  toLeadTimeRiskViews,
+} from "@/features/products/lead-time-risk-view";
 import {
   buildStockAlertTexts,
   toStockAlertViews,
@@ -14,7 +19,7 @@ import { buildStockCoverageTexts } from "@/features/products/stock-forecast-view
 import { productFocusHref } from "@/features/products/product-focus";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { Badge } from "@/ui/primitives/badge";
+import { Badge, type BadgeTone } from "@/ui/primitives/badge";
 import { Button } from "@/ui/primitives/button";
 import { EmptyState } from "@/ui/patterns/empty-state";
 import { SectionCard } from "@/ui/patterns/section-card";
@@ -43,6 +48,23 @@ import {
  * sırasını kurmaz — sıralama zaten `alerts`in geldiği sırada bitmiş olur.
  */
 const NO_PRIORITIES: readonly PurchasePriorityItem[] = [];
+const NO_LEAD_TIME_RISKS: ReadonlyMap<string, LeadTimeRisk> = new Map();
+
+/**
+ * `LeadTimeRiskView.tone`u metin rengine çevirir — rozet açılmıyor, çünkü
+ * satır zaten bir durum rozeti (`view.stateLabel`) taşıyor; ikinci bir
+ * rozet aynı bilgiyi iki kez renklendirmiş olurdu. Renk burada da tek
+ * başına anlam taşımaz: cümlenin kendisi ("gecikti" / "bugün" / "yaklaşıyor")
+ * zaten farkı söylüyor.
+ */
+const LEAD_TIME_TEXT_TONE: Record<BadgeTone, string> = {
+  danger: "text-danger",
+  warning: "text-warning",
+  success: "text-success",
+  info: "text-info",
+  neutral: "text-fg-muted",
+  accent: "text-accent",
+};
 
 export function StockAlertsCard({
   alerts,
@@ -52,6 +74,7 @@ export function StockAlertsCard({
   selection,
   reorderRecommendations,
   purchasePriorities = NO_PRIORITIES,
+  leadTimeRisks = NO_LEAD_TIME_RISKS,
 }: {
   /**
    * Gösterim sırası — kart bu sırayı **değiştirmez**. Satın alma öncelik
@@ -76,6 +99,12 @@ export function StockAlertsCard({
    * önceki davranışıyla aynı şekilde çalışmaya devam eder.
    */
   purchasePriorities?: readonly PurchasePriorityItem[];
+  /**
+   * `buildLeadTimeRisks`in çıktısı — ürün kimliğine göre tedarik süresi
+   * riski. Verilmezse (ör. eski çağıranlar) satırlar tedarik süresi
+   * bilgisi olmadan, önceki davranışıyla aynı şekilde çalışmaya devam eder.
+   */
+  leadTimeRisks?: ReadonlyMap<string, LeadTimeRisk>;
 }) {
   const t = useTranslations("stockAlerts");
   const products = useTranslations("products");
@@ -90,6 +119,9 @@ export function StockAlertsCard({
     windowDays,
     reorderRecommendations,
   );
+
+  const leadTimeTexts = buildLeadTimeRiskTexts(t);
+  const leadTimeViews = toLeadTimeRiskViews(leadTimeRisks, locale, leadTimeTexts);
 
   const priorityTexts = buildPurchasePriorityTexts(priority);
   const priorityViews = toPurchasePriorityViews(
@@ -116,6 +148,7 @@ export function StockAlertsCard({
           <ul className="flex flex-col gap-2">
             {views.map((view) => {
               const priorityView = priorityViews.get(view.productId);
+              const leadTimeView = leadTimeViews.get(view.productId);
 
               return (
                 <li
@@ -151,6 +184,24 @@ export function StockAlertsCard({
                         <p className="text-fg-muted mt-1 text-xs">
                           {priorityView.impact}
                         </p>
+                      ) : null}
+
+                      {/* Tedarik süresi riski: "ne kadar acil?" sorusunun
+                        cevabı. `safe`/ölçülemeyen durumlarda `leadTimeView`
+                        `visible: false` döner ve hiçbir şey basılmaz. */}
+                      {leadTimeView?.visible ? (
+                        <div className="mt-1">
+                          <p
+                            className={`text-xs font-medium ${LEAD_TIME_TEXT_TONE[leadTimeView.tone]}`}
+                          >
+                            {leadTimeView.message}
+                          </p>
+                          {leadTimeView.detail ? (
+                            <p className="text-fg-subtle text-xs">
+                              {leadTimeView.detail}
+                            </p>
+                          ) : null}
+                        </div>
                       ) : null}
 
                       {view.reorderQuantityLabel ? (

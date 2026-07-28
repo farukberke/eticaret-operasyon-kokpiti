@@ -22,6 +22,20 @@ export interface Product {
   /** Elde kalan adet. */
   readonly stock: number;
   readonly listedAt: IsoDate;
+  /**
+   * Sipariş verildikten sonra ürünün stoğa kullanılabilir biçimde girmesine
+   * kadar geçen tahmini takvim günü.
+   *
+   * `unitCost` gibi burada da pazaryeri API'sinin bilmediği bir veri akla
+   * gelebilir, ama tedarik süresi satıcının kendi ürün listesine girdiği bir
+   * alandır (çoğu pazaryerinde "hazırlama/kargo süresi" olarak zaten var) —
+   * bu yüzden ayrı bir port yerine doğrudan `Product` üzerinde duruyor.
+   *
+   * Tam sayı ve negatif olmayan bir değer beklenir; sıfır teknik olarak
+   * geçerlidir ("aynı gün tedarik"). Bilinmiyorsa `undefined` — eksik bir
+   * değer için varsayılan gün sayısı uydurulmaz.
+   */
+  readonly leadTimeDays?: number | undefined;
 }
 
 /**

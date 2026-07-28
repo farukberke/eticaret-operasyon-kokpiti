@@ -163,7 +163,7 @@ const DEMAND_BY_ARCHETYPE: Record<Archetype, DemandProfile> = {
 };
 
 /**
- * [id, ad, kategori, fiyat₺, maliyet₺, stok, arketip]
+ * [id, ad, kategori, fiyat₺, maliyet₺, stok, arketip, tedarikSüresiGün]
  *
  * Maliyetler gelişigüzel değil, hedef **net** marja göre seçildi. Net marj
  * fiyattan maliyet + %15 komisyon + kargo payı düşüldükten sonra kalandır;
@@ -177,19 +177,34 @@ const DEMAND_BY_ARCHETYPE: Record<Archetype, DemandProfile> = {
  *   star                   ≈ %55        → net ~%27  (RESTOCK_WINNER eşiği %25)
  *   premium                ≈ %35        → net ~%47  (fiyat testi eşiği %40)
  *   loss                   ≈ %84        → net negatif
+ *
+ * Tedarik süresi kategoriye göre kabaca gerçekçi: elektronik ithal olduğu
+ * için en uzun (18-21 gün), aksesuar yerli/hızlı tedarik olduğu için en
+ * kısa (5-9 gün). Dört üründe `undefined` — satıcının henüz tedarik süresi
+ * girmediği ürünleri temsil eder (`leadTimeDays` eksik davranışı gerçekten
+ * görünsün diye, tıpkı `PRODUCTS_WITHOUT_COST` gibi).
  */
-type Row = readonly [string, string, string, number, number, number, Archetype];
+type Row = readonly [
+  string,
+  string,
+  string,
+  number,
+  number,
+  number,
+  Archetype,
+  number | undefined,
+];
 
 const ROWS: readonly Row[] = [
   // ── Sinyal üretmesi beklenen ürünler ────────────────────────────────────
-  ["kirmizi-elbise", "Kırmızı Midi Elbise", "Giyim", 1290, 774, 28, "stockout"],
-  ["beyaz-sneaker", "Beyaz Deri Sneaker", "Ayakkabı", 2450, 1470, 34, "stockout"],
-  ["deri-ceket", "Siyah Deri Ceket", "Giyim", 4890, 2690, 74, "star"],
-  ["yun-kazak", "Merinos Yün Kazak", "Giyim", 1890, 1040, 66, "star"],
-  ["mavi-gomlek", "Mavi Oxford Gömlek", "Giyim", 990, 832, 210, "loss"],
-  ["spor-canta", "Spor Sırt Çantası", "Aksesuar", 1150, 966, 180, "loss"],
-  ["dijital-saat", "Dijital Kol Saati", "Aksesuar", 2290, 1442, 145, "returner"],
-  ["kot-pantolon", "Slim Fit Kot Pantolon", "Giyim", 1490, 939, 165, "returner"],
+  ["kirmizi-elbise", "Kırmızı Midi Elbise", "Giyim", 1290, 774, 28, "stockout", 12],
+  ["beyaz-sneaker", "Beyaz Deri Sneaker", "Ayakkabı", 2450, 1470, 34, "stockout", 15],
+  ["deri-ceket", "Siyah Deri Ceket", "Giyim", 4890, 2690, 74, "star", 14],
+  ["yun-kazak", "Merinos Yün Kazak", "Giyim", 1890, 1040, 66, "star", 10],
+  ["mavi-gomlek", "Mavi Oxford Gömlek", "Giyim", 990, 832, 210, "loss", 9],
+  ["spor-canta", "Spor Sırt Çantası", "Aksesuar", 1150, 966, 180, "loss", undefined],
+  ["dijital-saat", "Dijital Kol Saati", "Aksesuar", 2290, 1442, 145, "returner", 6],
+  ["kot-pantolon", "Slim Fit Kot Pantolon", "Giyim", 1490, 939, 165, "returner", 11],
   [
     "bluetooth-kulaklik",
     "Bluetooth Kulaklık",
@@ -198,40 +213,59 @@ const ROWS: readonly Row[] = [
     1074,
     220,
     "adburner",
+    21,
   ],
-  ["akilli-bileklik", "Akıllı Bileklik", "Elektronik", 1290, 774, 195, "adburner"],
-  ["keten-gomlek", "Keten Yazlık Gömlek", "Giyim", 1090, 632, 240, "trending"],
-  ["hasir-sapka", "Hasır Plaj Şapkası", "Aksesuar", 650, 377, 310, "trending"],
-  ["yaz-elbise", "Çiçek Desenli Yaz Elbisesi", "Giyim", 1390, 806, 285, "trending"],
-  ["ipek-esarp", "İpek Eşarp", "Aksesuar", 1850, 648, 120, "premium"],
-  ["parfum-set", "Özel Seri Parfüm Seti", "Kozmetik", 3200, 1120, 95, "premium"],
-  ["deri-cuzdan", "El Yapımı Deri Cüzdan", "Aksesuar", 1450, 508, 140, "premium"],
-  ["kislik-mont", "Kışlık Şişme Mont", "Giyim", 3890, 2334, 130, "dead"],
-  ["kar-botu", "Su Geçirmez Kar Botu", "Ayakkabı", 2990, 1794, 105, "dead"],
-  ["kapusonlu-sweat", "Kapüşonlu Sweatshirt", "Giyim", 1290, 813, 175, "fading"],
-  ["kosu-ayakkabi", "Koşu Ayakkabısı", "Ayakkabı", 2790, 1758, 150, "fading"],
+  ["akilli-bileklik", "Akıllı Bileklik", "Elektronik", 1290, 774, 195, "adburner", 18],
+  ["keten-gomlek", "Keten Yazlık Gömlek", "Giyim", 1090, 632, 240, "trending", 8],
+  ["hasir-sapka", "Hasır Plaj Şapkası", "Aksesuar", 650, 377, 310, "trending", 5],
+  [
+    "yaz-elbise",
+    "Çiçek Desenli Yaz Elbisesi",
+    "Giyim",
+    1390,
+    806,
+    285,
+    "trending",
+    undefined,
+  ],
+  ["ipek-esarp", "İpek Eşarp", "Aksesuar", 1850, 648, 120, "premium", 7],
+  ["parfum-set", "Özel Seri Parfüm Seti", "Kozmetik", 3200, 1120, 95, "premium", 10],
+  ["deri-cuzdan", "El Yapımı Deri Cüzdan", "Aksesuar", 1450, 508, 140, "premium", 6],
+  ["kislik-mont", "Kışlık Şişme Mont", "Giyim", 3890, 2334, 130, "dead", 16],
+  ["kar-botu", "Su Geçirmez Kar Botu", "Ayakkabı", 2990, 1794, 105, "dead", 18],
+  ["kapusonlu-sweat", "Kapüşonlu Sweatshirt", "Giyim", 1290, 813, 175, "fading", 9],
+  ["kosu-ayakkabi", "Koşu Ayakkabısı", "Ayakkabı", 2790, 1758, 150, "fading", 12],
 
   // ── Sessiz çoğunluk ─────────────────────────────────────────────────────
-  ["basic-tisort", "Basic Pamuk Tişört", "Giyim", 490, 309, 420, "steady"],
-  ["jean-ceket", "Denim Ceket", "Giyim", 1990, 1254, 190, "steady"],
-  ["triko-hirka", "Triko Hırka", "Giyim", 1590, 1002, 205, "steady"],
-  ["chino-pantolon", "Chino Pantolon", "Giyim", 1290, 813, 230, "steady"],
-  ["polo-tisort", "Polo Yaka Tişört", "Giyim", 790, 498, 310, "steady"],
-  ["loafer", "Süet Loafer", "Ayakkabı", 2190, 1380, 145, "steady"],
-  ["sandalet", "Deri Sandalet", "Ayakkabı", 1390, 876, 175, "steady"],
-  ["bot", "Klasik Deri Bot", "Ayakkabı", 3290, 2073, 120, "steady"],
-  ["terlik", "Ev Terliği", "Ayakkabı", 390, 246, 380, "steady"],
-  ["kemer", "Hakiki Deri Kemer", "Aksesuar", 890, 561, 265, "steady"],
-  ["gunes-gozlugu", "Polarize Güneş Gözlüğü", "Aksesuar", 1690, 1065, 185, "steady"],
-  ["omuz-cantasi", "Omuz Çantası", "Aksesuar", 1990, 1254, 155, "steady"],
-  ["nemlendirici", "Yoğun Nemlendirici Krem", "Kozmetik", 690, 435, 340, "steady"],
-  ["sampuan", "Onarıcı Şampuan", "Kozmetik", 450, 284, 410, "steady"],
-  ["yuz-serumu", "C Vitamini Serum", "Kozmetik", 1290, 813, 220, "steady"],
-  ["nevresim", "Pamuk Nevresim Takımı", "Ev & Yaşam", 2490, 1569, 135, "steady"],
-  ["havlu-set", "Bambu Havlu Seti", "Ev & Yaşam", 1190, 750, 245, "steady"],
-  ["mum-set", "Aromatik Mum Seti", "Ev & Yaşam", 590, 372, 300, "steady"],
-  ["termos", "Çelik Termos 1L", "Ev & Yaşam", 890, 561, 260, "steady"],
-  ["masa-lambasi", "LED Masa Lambası", "Ev & Yaşam", 1390, 876, 165, "steady"],
+  ["basic-tisort", "Basic Pamuk Tişört", "Giyim", 490, 309, 420, "steady", 7],
+  ["jean-ceket", "Denim Ceket", "Giyim", 1990, 1254, 190, "steady", 12],
+  ["triko-hirka", "Triko Hırka", "Giyim", 1590, 1002, 205, "steady", 10],
+  ["chino-pantolon", "Chino Pantolon", "Giyim", 1290, 813, 230, "steady", 8],
+  ["polo-tisort", "Polo Yaka Tişört", "Giyim", 790, 498, 310, "steady", 6],
+  ["loafer", "Süet Loafer", "Ayakkabı", 2190, 1380, 145, "steady", 10],
+  ["sandalet", "Deri Sandalet", "Ayakkabı", 1390, 876, 175, "steady", 9],
+  ["bot", "Klasik Deri Bot", "Ayakkabı", 3290, 2073, 120, "steady", undefined],
+  ["terlik", "Ev Terliği", "Ayakkabı", 390, 246, 380, "steady", 5],
+  ["kemer", "Hakiki Deri Kemer", "Aksesuar", 890, 561, 265, "steady", 5],
+  ["gunes-gozlugu", "Polarize Güneş Gözlüğü", "Aksesuar", 1690, 1065, 185, "steady", 8],
+  ["omuz-cantasi", "Omuz Çantası", "Aksesuar", 1990, 1254, 155, "steady", 7],
+  ["nemlendirici", "Yoğun Nemlendirici Krem", "Kozmetik", 690, 435, 340, "steady", 7],
+  ["sampuan", "Onarıcı Şampuan", "Kozmetik", 450, 284, 410, "steady", 6],
+  ["yuz-serumu", "C Vitamini Serum", "Kozmetik", 1290, 813, 220, "steady", 8],
+  ["nevresim", "Pamuk Nevresim Takımı", "Ev & Yaşam", 2490, 1569, 135, "steady", 12],
+  ["havlu-set", "Bambu Havlu Seti", "Ev & Yaşam", 1190, 750, 245, "steady", 9],
+  ["mum-set", "Aromatik Mum Seti", "Ev & Yaşam", 590, 372, 300, "steady", 6],
+  ["termos", "Çelik Termos 1L", "Ev & Yaşam", 890, 561, 260, "steady", 7],
+  [
+    "masa-lambasi",
+    "LED Masa Lambası",
+    "Ev & Yaşam",
+    1390,
+    876,
+    165,
+    "steady",
+    undefined,
+  ],
 ];
 
 /** Sık birlikte alınan çiftler — paket önerisi bu ilişkiden doğar. */
@@ -244,7 +278,7 @@ const BUNDLE_PAIRS: readonly (readonly [string, string])[] = [
 const BUNDLE_PARTNER = new Map(BUNDLE_PAIRS);
 
 export const CATALOG: readonly CatalogEntry[] = ROWS.map(
-  ([id, name, category, price, cost, stock, archetype]) => {
+  ([id, name, category, price, cost, stock, archetype, leadTimeDays]) => {
     const partner = BUNDLE_PARTNER.get(id);
     const baseDemand = DEMAND_BY_ARCHETYPE[archetype];
 
@@ -258,6 +292,7 @@ export const CATALOG: readonly CatalogEntry[] = ROWS.map(
         price: lira(price),
         stock,
         listedAt: CATALOG_LISTED_AT,
+        leadTimeDays,
       },
       unitCost: lira(cost),
       archetype,

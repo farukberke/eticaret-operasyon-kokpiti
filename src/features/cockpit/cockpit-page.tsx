@@ -11,6 +11,7 @@ import {
   buildPurchasePriorities,
   orderStockAlertsByPriority,
 } from "@/core/services/purchase-priority";
+import { buildLeadTimeRisks } from "@/core/services/lead-time-risk";
 import { buildReorderRecommendations } from "@/core/services/reorder-suggestion";
 import { buildStockAlerts } from "@/core/services/stock-alerts";
 import { buildStockForecasts } from "@/core/services/stock-forecast";
@@ -180,6 +181,12 @@ export async function CockpitPage({
     stockAlerts,
     purchasePriorities,
   );
+  /**
+   * Aynı tek geçiş ilkesi: tedarik süresi riski `stockForecasts`i olduğu
+   * gibi okur, tahmini yeniden hesaplamaz. Satın alma önceliği bu adımda
+   * bilinçli olarak bu çıktıyı kullanmıyor (bkz. `lead-time-risk.ts`).
+   */
+  const leadTimeRisks = buildLeadTimeRisks(productPerformance, stockForecasts);
 
   const [t, common, comparisonMessages] = await Promise.all([
     getTranslations("cockpit"),
@@ -350,6 +357,7 @@ export async function CockpitPage({
           selection={selection}
           reorderRecommendations={reorderRecommendations}
           purchasePriorities={purchasePriorities}
+          leadTimeRisks={leadTimeRisks.byProduct}
         />
 
         {/* 5 — KAPANIŞ. Günün işi bittikten sonra okunacak not. */}

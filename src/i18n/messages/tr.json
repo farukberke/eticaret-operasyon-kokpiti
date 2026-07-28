@@ -213,6 +213,13 @@
     "reorder": {
       "quantity": "Önerilen sipariş: {count} adet",
       "basis": "Günde ortalama {velocity} adet satışa göre, {days} günlük hedef stok için tahmini."
+    },
+    "leadTime": {
+      "late": "Mevcut satış hızına göre tahmini {days} günlük stok boşluğu riski.",
+      "dueToday": "Sipariş planlaması bugün değerlendirilmeli.",
+      "upcoming": "Sipariş kararına yaklaşık {days} gün var.",
+      "unknownLeadTime": "Tedarik süresi bilgisi eksik.",
+      "detail": "Tedarik süresi: {leadDays} gün · Tahmini stok: {coverDays} gün"
     }
   },
   "purchasePriority": {

@@ -61,6 +61,30 @@ describe("stok uyarısı sözlüğü", () => {
       expect(messages.stockAlerts.reorder.basis).toContain("{velocity}");
       expect(messages.stockAlerts.reorder.basis).toContain("{days}");
     });
+
+    it(`${locale}: tedarik süresi metinleri dolu ve yer tutucuları taşıyor`, () => {
+      const leadTime = messages.stockAlerts.leadTime;
+      expect(leadTime.late.trim()).not.toBe("");
+      expect(leadTime.late).toContain("{days}");
+      expect(leadTime.dueToday.trim()).not.toBe("");
+      expect(leadTime.upcoming.trim()).not.toBe("");
+      expect(leadTime.upcoming).toContain("{days}");
+      expect(leadTime.unknownLeadTime.trim()).not.toBe("");
+      expect(leadTime.detail.trim()).not.toBe("");
+      expect(leadTime.detail).toContain("{leadDays}");
+      expect(leadTime.detail).toContain("{coverDays}");
+    });
+
+    it(`${locale}: tedarik süresi durumlarının metinleri birbirinden ayırt edilebilir`, () => {
+      const leadTime = messages.stockAlerts.leadTime;
+      const labels = [
+        leadTime.late,
+        leadTime.dueToday,
+        leadTime.upcoming,
+        leadTime.unknownLeadTime,
+      ];
+      expect(new Set(labels).size).toBe(labels.length);
+    });
   }
 
   it("iki dil aynı anahtar kümesini taşıyor", () => {
@@ -75,6 +99,9 @@ describe("stok uyarısı sözlüğü", () => {
     );
     expect(Object.keys(tr.stockAlerts.reorder).sort()).toEqual(
       Object.keys(en.stockAlerts.reorder).sort(),
+    );
+    expect(Object.keys(tr.stockAlerts.leadTime).sort()).toEqual(
+      Object.keys(en.stockAlerts.leadTime).sort(),
     );
   });
 });

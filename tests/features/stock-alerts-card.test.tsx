@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it } from "vitest";
 
+import type { LeadTimeRisk } from "@/core/services/lead-time-risk";
 import type { PurchasePriorityItem } from "@/core/services/purchase-priority";
 import type { ReorderRecommendation } from "@/core/services/reorder-suggestion";
 import type { StockAlert } from "@/core/services/stock-alerts";
@@ -40,6 +41,8 @@ const EMPTY_RECOMMENDATIONS: ReadonlyMap<string, ReorderRecommendation> = new Ma
 
 const EMPTY_PRIORITIES: readonly PurchasePriorityItem[] = [];
 
+const EMPTY_LEAD_TIME_RISKS: ReadonlyMap<string, LeadTimeRisk> = new Map();
+
 function renderCard(
   alerts: readonly StockAlert[],
   options: {
@@ -49,6 +52,7 @@ function renderCard(
     windowDays?: number;
     reorderRecommendations?: ReadonlyMap<string, ReorderRecommendation>;
     purchasePriorities?: readonly PurchasePriorityItem[];
+    leadTimeRisks?: ReadonlyMap<string, LeadTimeRisk>;
   } = {},
 ) {
   const {
@@ -58,6 +62,7 @@ function renderCard(
     windowDays = 30,
     reorderRecommendations = EMPTY_RECOMMENDATIONS,
     purchasePriorities = EMPTY_PRIORITIES,
+    leadTimeRisks = EMPTY_LEAD_TIME_RISKS,
   } = options;
 
   return render(
@@ -70,6 +75,7 @@ function renderCard(
         selection={selection}
         reorderRecommendations={reorderRecommendations}
         purchasePriorities={purchasePriorities}
+        leadTimeRisks={leadTimeRisks}
       />
     </NextIntlClientProvider>,
   );
@@ -367,6 +373,114 @@ describe("kokpit stok uyarısı kartı", () => {
 
       const row = rows()[0]!;
       expect(within(row).queryByText(/Öncelik #/)).toBeNull();
+    });
+  });
+
+  describe("tedarik süresi riski", () => {
+    function risk(overrides: Partial<LeadTimeRisk> = {}): LeadTimeRisk {
+      return {
+        state: "late",
+        leadTimeDays: 7,
+        daysOfCover: 4,
+        shortageGapDays: 3,
+        orderDecisionDays: -3,
+        ...overrides,
+      };
+    }
+
+    it("late satırında stok boşluğu mesajı ve tedarik süresi detayı gösterilir", () => {
+      renderCard([alert({ productId: "p1", level: "critical", daysRemaining: 4 })], {
+        leadTimeRisks: new Map([["p1", risk()]]),
+      });
+
+      const row = rows()[0]!;
+      expect(within(row).getByText(/3/)).toBeDefined();
+      expect(within(row).getByText(/Tedarik süresi: 7 gün/)).toBeDefined();
+    });
+
+    it("dueToday satırında sabit uyarı metni gösterilir", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })], {
+        leadTimeRisks: new Map([
+          [
+            "p1",
+            risk({
+              state: "dueToday",
+              shortageGapDays: null,
+              orderDecisionDays: 0,
+            }),
+          ],
+        ]),
+      });
+
+      const row = rows()[0]!;
+      expect(within(row).getByText(tr.stockAlerts.leadTime.dueToday)).toBeDefined();
+    });
+
+    it("unknownLeadTime satırında kısa veri tamamlama mesajı gösterilir, detay yok", () => {
+      renderCard([alert({ productId: "p1", level: "low" })], {
+        leadTimeRisks: new Map([
+          [
+            "p1",
+            risk({
+              state: "unknownLeadTime",
+              leadTimeDays: null,
+              shortageGapDays: null,
+              orderDecisionDays: null,
+            }),
+          ],
+        ]),
+      });
+
+      const row = rows()[0]!;
+      expect(
+        within(row).getByText(tr.stockAlerts.leadTime.unknownLeadTime),
+      ).toBeDefined();
+      expect(within(row).queryByText(/Tedarik süresi:/)).toBeNull();
+    });
+
+    it("safe satırında hiçbir tedarik süresi metni gösterilmez", () => {
+      renderCard([alert({ productId: "p1", level: "low" })], {
+        leadTimeRisks: new Map([
+          [
+            "p1",
+            risk({
+              state: "safe",
+              shortageGapDays: null,
+              orderDecisionDays: 40,
+            }),
+          ],
+        ]),
+      });
+
+      const row = rows()[0]!;
+      expect(within(row).queryByText(/Tedarik süresi:/)).toBeNull();
+      expect(within(row).queryByText(tr.stockAlerts.leadTime.dueToday)).toBeNull();
+    });
+
+    it("leadTimeRisks verilmezse eski davranış değişmez", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })]);
+
+      const row = rows()[0]!;
+      expect(within(row).queryByText(/Tedarik süresi:/)).toBeNull();
+    });
+
+    it("İngilizce: tedarik süresi mesajı çeviridir", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })], {
+        locale: "en",
+        leadTimeRisks: new Map([
+          [
+            "p1",
+            risk({
+              state: "dueToday",
+              shortageGapDays: null,
+              orderDecisionDays: 0,
+            }),
+          ],
+        ]),
+      });
+
+      const row = rows()[0]!;
+      expect(within(row).getByText(en.stockAlerts.leadTime.dueToday)).toBeDefined();
     });
   });
 });

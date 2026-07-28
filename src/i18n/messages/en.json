@@ -213,6 +213,13 @@
     "reorder": {
       "quantity": "Suggested reorder: {count} units",
       "basis": "Estimated for a {days}-day target stock at an average of {velocity} units/day."
+    },
+    "leadTime": {
+      "late": "Estimated {days}-day stock gap risk based on current sales pace.",
+      "dueToday": "Reorder planning should be reviewed today.",
+      "upcoming": "About {days} days left to decide on a reorder.",
+      "unknownLeadTime": "Lead time information is missing.",
+      "detail": "Lead time: {leadDays} days · Estimated stock: {coverDays} days"
     }
   },
   "purchasePriority": {
