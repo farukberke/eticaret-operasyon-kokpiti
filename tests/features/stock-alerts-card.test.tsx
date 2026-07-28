@@ -295,6 +295,9 @@ describe("kokpit stok uyarısı kartı", () => {
         daysRemaining: 5,
         dailyVelocity: 2,
         reorderQuantity: 10,
+        leadTimeStatus: "safe",
+        orderDecisionDays: 10,
+        shortageGapDays: null,
         rank: 1,
         ...overrides,
       };

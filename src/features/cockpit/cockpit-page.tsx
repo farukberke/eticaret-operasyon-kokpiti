@@ -169,24 +169,26 @@ export async function CockpitPage({
     stockForecasts,
   );
   /**
-   * Satın alma önceliği — `stockAlerts` ve `reorderRecommendations`i olduğu
-   * gibi okur, ikisini de yeniden hesaplamaz. Kartın gördüğü `alerts` burada,
-   * tek yerde, rütbeye göre dizilir; kart kendisi sıralama yapmaz.
+   * Aynı tek geçiş ilkesi: tedarik süresi riski `stockForecasts`i olduğu
+   * gibi okur, tahmini yeniden hesaplamaz. Satın alma önceliği aşağıda bu
+   * çıktıyı — aynı grup içindeki ikinci sıralama katmanı olarak — okur.
+   */
+  const leadTimeRisks = buildLeadTimeRisks(productPerformance, stockForecasts);
+  /**
+   * Satın alma önceliği — `stockAlerts`, `reorderRecommendations` ve
+   * `leadTimeRisks`i olduğu gibi okur, hiçbirini yeniden hesaplamaz. Kartın
+   * gördüğü `alerts` burada, tek yerde, rütbeye göre dizilir; kart kendisi
+   * sıralama yapmaz.
    */
   const purchasePriorities = buildPurchasePriorities(
     stockAlerts,
     reorderRecommendations,
+    leadTimeRisks.byProduct,
   );
   const orderedStockAlerts = orderStockAlertsByPriority(
     stockAlerts,
     purchasePriorities,
   );
-  /**
-   * Aynı tek geçiş ilkesi: tedarik süresi riski `stockForecasts`i olduğu
-   * gibi okur, tahmini yeniden hesaplamaz. Satın alma önceliği bu adımda
-   * bilinçli olarak bu çıktıyı kullanmıyor (bkz. `lead-time-risk.ts`).
-   */
-  const leadTimeRisks = buildLeadTimeRisks(productPerformance, stockForecasts);
 
   const [t, common, comparisonMessages] = await Promise.all([
     getTranslations("cockpit"),
