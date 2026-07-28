@@ -16,6 +16,7 @@ import { Badge } from "@/ui/primitives/badge";
 import { DataTable, type Column } from "@/ui/patterns/data-table";
 import { EmptyState } from "@/ui/patterns/empty-state";
 
+import { productAnchorId } from "./product-focus";
 import type { ProductRow, ProductTableLabels } from "./product-row";
 
 /**
@@ -76,10 +77,17 @@ export function ProductTableClient({
   rows,
   labels,
   compact = false,
+  focusProductId,
 }: {
   rows: readonly ProductRow[];
   labels: ProductTableLabels;
   compact?: boolean;
+  /**
+   * Kokpitteki stok uyarısından "Ürüne git" ile gelindiğinde vurgulanacak
+   * satır. Adres çubuğunda durur — bağlantı paylaşılabilir, yenilenince
+   * kaybolmaz.
+   */
+  focusProductId?: string | undefined;
 }) {
   const columns: Column<ProductRow>[] = [
     {
@@ -183,6 +191,8 @@ export function ProductTableClient({
         rows={rows}
         columns={columns}
         getRowId={(row) => row.id}
+        getRowAnchor={(row) => productAnchorId(row.id)}
+        isRowHighlighted={(row) => row.id === focusProductId}
         initialSort={{ key: "netRevenue", direction: "desc" }}
         sortHint={labels.sortHint}
         emptyState={

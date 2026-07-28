@@ -15,10 +15,17 @@ import { ProductTable } from "./product-table";
 export async function ProductsPage({
   locale,
   searchParams,
+  focusProductId,
 }: {
   locale: Locale;
   /** Analiz penceresi kokpitten bağlantıyla taşınır; sunucu onu buradan okur. */
   searchParams: SearchParamsRecord;
+  /**
+   * Kokpitteki stok uyarısından "Ürüne git" ile gelindiğinde vurgulanacak
+   * ürün. Adres çubuğunda durur: bağlantı paylaşılabilir, yenilenince
+   * kaybolmaz.
+   */
+  focusProductId?: string | undefined;
 }) {
   /**
    * Sayfa artık `defaultRange()` kullanmıyor.
@@ -40,7 +47,12 @@ export async function ProductsPage({
     <>
       <PageHeader title={t("title")} description={`${t("description")} ${note}`} />
       <Card className="overflow-hidden py-2">
-        <ProductTable performance={performance} range={range} locale={locale} />
+        <ProductTable
+          performance={performance}
+          range={range}
+          locale={locale}
+          focusProductId={focusProductId}
+        />
       </Card>
     </>
   );

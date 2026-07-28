@@ -1,3 +1,5 @@
+import type { getTranslations } from "next-intl/server";
+
 import type { StockCoverageState, StockForecast } from "@/core/services/stock-forecast";
 import type { Locale } from "@/i18n/routing";
 import { formatNumber } from "@/lib/format";
@@ -61,6 +63,39 @@ export interface StockCoverageTexts {
  * bırakmak onu görünmez kılardı. `undefined` kabul etmek ayrıca çağıranın
  * `!` yazmasını gereksiz kılıyor.
  */
+/**
+ * `products` sözlüğünden `StockCoverageTexts` kurar.
+ *
+ * Ürün tablosu ve kokpitteki stok uyarı kartı **aynı** durum kelimelerini
+ * göstermek zorunda: tabloda "Kritik" gördüğü ürün kokpitte "Bilinmiyor"
+ * okursa panel kendi kendini yalanlar. Bu yüzden çeviri eşlemesi tek yerde —
+ * iki ayrı çağıran, iki ayrı eşleme değil.
+ *
+ * Etiketler `t(\`coverage.${state}\`)` ile dinamik kurulsaydı eksik bir anahtar
+ * ne derlemeyi ne testi kırar, kullanıcıya ham anahtar adını basardı. Tek tek
+ * yazmak derleyiciyi bekçi yapıyor: `StockCoverageState`e yeni bir durum
+ * eklendiği anda burası tip hatası verir.
+ */
+export function buildStockCoverageTexts(
+  t: Awaited<ReturnType<typeof getTranslations<"products">>>,
+): StockCoverageTexts {
+  const state: Record<StockCoverageState, string> = {
+    critical: t("coverage.critical"),
+    low: t("coverage.low"),
+    normal: t("coverage.normal"),
+    high: t("coverage.high"),
+    unknown: t("coverage.unknown"),
+    noSales: t("coverage.noSales"),
+    negative: t("coverage.negative"),
+  };
+
+  return {
+    state,
+    days: (days) => t("daysUnit", { days }),
+    hint: (windowDays) => t("coverage.hint", { days: windowDays }),
+  };
+}
+
 export function toStockCoverageView(
   forecast: StockForecast | undefined,
   locale: Locale,

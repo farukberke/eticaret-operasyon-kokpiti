@@ -189,6 +189,28 @@
       "hint": "Estimated from the last {days} days of sales velocity."
     }
   },
+  "stockAlerts": {
+    "title": "Check these in stock first",
+    "description": "Sorted by stockout risk and data issues.",
+    "empty": "No products need stock action for the selected period.",
+    "emptyDescription": "No critical, low, negative, or unknown-stock products found.",
+    "noData": "No products for this period",
+    "noDataHint": "No products found in the catalog.",
+    "cta": "Go to product",
+    "stockLabel": "{count} units",
+    "reason": {
+      "negative": "High-priority data/stock correction task.",
+      "critical": "High-priority stockout risk.",
+      "unknown": "Missing stock data task.",
+      "low": "Medium-priority restock alert."
+    },
+    "action": {
+      "negative": "Correct the stock count.",
+      "critical": "Check the supply plan today.",
+      "unknown": "Add up-to-date stock information.",
+      "low": "Plan a reorder for the near term."
+    }
+  },
   "sales": {
     "title": "Sales",
     "description": "Sales picture for the last {days} days",

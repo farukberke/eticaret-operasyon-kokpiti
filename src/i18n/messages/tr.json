@@ -189,6 +189,28 @@
       "hint": "Son {days} günlük satış hızına göre tahmini."
     }
   },
+  "stockAlerts": {
+    "title": "Stokta önce bunlara bakın",
+    "description": "Tükenme riski ve veri sorunlarına göre sıralı.",
+    "empty": "Seçilen dönemde stok müdahalesi gereken ürün yok.",
+    "emptyDescription": "Kritik, düşük, negatif ya da bilinmeyen stoklu ürün görünmüyor.",
+    "noData": "Bu dönem için ürün yok",
+    "noDataHint": "Katalogda gösterilecek ürün bulunamadı.",
+    "cta": "Ürüne git",
+    "stockLabel": "{count} adet",
+    "reason": {
+      "negative": "Yüksek öncelikli veri/stok düzeltme görevi.",
+      "critical": "Yüksek öncelikli stok tükenme riski.",
+      "unknown": "Stok verisi eksik görevi.",
+      "low": "Orta öncelikli stok yenileme uyarısı."
+    },
+    "action": {
+      "negative": "Stok miktarını düzeltin.",
+      "critical": "Tedarik planını bugün kontrol edin.",
+      "unknown": "Güncel stok bilgisini ekleyin.",
+      "low": "Yakın dönem için yeniden sipariş planlayın."
+    }
+  },
   "sales": {
     "title": "Satış",
     "description": "Son {days} günün satış tablosu",

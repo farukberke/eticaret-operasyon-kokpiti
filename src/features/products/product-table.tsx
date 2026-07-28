@@ -1,15 +1,12 @@
 import { getTranslations } from "next-intl/server";
 
 import type { DateRange, ProductPerformance } from "@/core/domain";
-import {
-  buildStockForecasts,
-  type StockCoverageState,
-} from "@/core/services/stock-forecast";
+import { buildStockForecasts } from "@/core/services/stock-forecast";
 import type { Locale } from "@/i18n/routing";
 
 import { ProductTableClient } from "./product-table.client";
 import { toProductRow, type ProductTableLabels } from "./product-row";
-import type { StockCoverageTexts } from "./stock-forecast-view";
+import { buildStockCoverageTexts } from "./stock-forecast-view";
 
 /**
  * Ürün tablosunun sunucu yarısı.
@@ -18,45 +15,20 @@ import type { StockCoverageTexts } from "./stock-forecast-view";
  * düz veri geçirir. Böylece `Intl` çağrıları ve sözlükler tarayıcıya inmez.
  */
 
-/**
- * Sözlükte karşılığı olması gereken durumlar.
- *
- * Etiketler `t(\`coverage.${state}\`)` ile dinamik kurulsaydı eksik bir
- * anahtar ne derlemeyi ne testi kırar, kullanıcıya ham anahtar adını basardı.
- * Tek tek yazmak derleyiciyi bekçi yapıyor: `StockCoverageState`e yeni bir
- * durum eklendiği anda burası tip hatası verir.
- */
-function coverageTextsOf(
-  t: Awaited<ReturnType<typeof getTranslations<"products">>>,
-): StockCoverageTexts {
-  const state: Record<StockCoverageState, string> = {
-    critical: t("coverage.critical"),
-    low: t("coverage.low"),
-    normal: t("coverage.normal"),
-    high: t("coverage.high"),
-    unknown: t("coverage.unknown"),
-    noSales: t("coverage.noSales"),
-    negative: t("coverage.negative"),
-  };
-
-  return {
-    state,
-    days: (days) => t("daysUnit", { days }),
-    hint: (windowDays) => t("coverage.hint", { days: windowDays }),
-  };
-}
-
 export async function ProductTable({
   performance,
   range,
   locale,
   compact = false,
+  focusProductId,
 }: {
   performance: readonly ProductPerformance[];
   /** Seçili analiz penceresi — satış hızının ve dipnotun kaynağı. */
   range: DateRange;
   locale: Locale;
   compact?: boolean;
+  /** Kokpitteki stok uyarısından gelindiğinde vurgulanacak ürün. */
+  focusProductId?: string | undefined;
 }) {
   const [t, common] = await Promise.all([
     getTranslations("products"),
@@ -69,7 +41,7 @@ export async function ProductTable({
    * boyu tekrarlamak olurdu.
    */
   const forecasts = buildStockForecasts(performance, range);
-  const coverageTexts = coverageTextsOf(t);
+  const coverageTexts = buildStockCoverageTexts(t);
 
   const rows = performance.map((item) =>
     toProductRow(item, forecasts.byProduct.get(item.product.id), locale, coverageTexts),
@@ -98,5 +70,12 @@ export async function ProductTable({
     coverageNote: coverageTexts.hint(forecasts.windowDays),
   };
 
-  return <ProductTableClient rows={rows} labels={labels} compact={compact} />;
+  return (
+    <ProductTableClient
+      rows={rows}
+      labels={labels}
+      compact={compact}
+      focusProductId={focusProductId}
+    />
+  );
 }

@@ -42,6 +42,13 @@ export interface DataTableProps<T> {
   /** Sıralanabilir başlıklar için ekran okuyucu ipucu. */
   readonly sortHint?: string;
   readonly className?: string;
+  /**
+   * Satıra DOM çapası verir — başka bir ekrandan `#çapa` ile gelen bağlantı
+   * tarayıcının kendi kaydırmasıyla doğru satıra iner.
+   */
+  readonly getRowAnchor?: (row: T) => string;
+  /** Çapayla gelen satırı görsel olarak öne çıkarır. */
+  readonly isRowHighlighted?: (row: T) => boolean;
 }
 
 /** `null` her zaman listenin sonuna gider — "hesaplanamaz" en iyi değer değildir. */
@@ -70,6 +77,8 @@ export function DataTable<T>({
   emptyState,
   sortHint,
   className,
+  getRowAnchor,
+  isRowHighlighted,
 }: DataTableProps<T>) {
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | null>(
     initialSort ?? null,
@@ -150,7 +159,11 @@ export function DataTable<T>({
 
         <TBody>
           {sortedRows.map((row) => (
-            <TR key={getRowId(row)}>
+            <TR
+              key={getRowId(row)}
+              id={getRowAnchor?.(row)}
+              className={cn("scroll-mt-4", isRowHighlighted?.(row) && "bg-accent-soft")}
+            >
               {columns.map((column) => (
                 <TD
                   key={column.key}

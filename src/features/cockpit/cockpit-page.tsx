@@ -7,6 +7,8 @@ import {
   comparisonRangeOf,
   signalsAtStake,
 } from "@/core/services/period-comparison";
+import { buildStockAlerts } from "@/core/services/stock-alerts";
+import { buildStockForecasts } from "@/core/services/stock-forecast";
 import { container } from "@/data/container";
 import { Link } from "@/i18n/navigation";
 import { CURRENCY, type Locale } from "@/i18n/routing";
@@ -30,6 +32,7 @@ import { buildComparisonViews } from "./comparison-view";
 import { ContextStrip } from "./context-strip";
 import { DayLedger } from "./day-ledger.client";
 import { MissingCostCard } from "./missing-cost-card";
+import { StockAlertsCard } from "./stock-alerts-card";
 
 /**
  * KOKPİT — "sabah aç, 30 saniyede ne yapacağını anla".
@@ -122,6 +125,7 @@ export async function CockpitPage({
     missingCosts,
     previousRisks,
     previousOpportunities,
+    productPerformance,
   ] = await Promise.all([
     container.priorities.getPriorities(range),
     container.signals.getRisks(range),
@@ -133,7 +137,22 @@ export async function CockpitPage({
     container.costInsights.getMissingCosts(range),
     container.signals.getRisks(previousRange),
     container.signals.getOpportunities(previousRange),
+    /**
+     * Ek port çağrısı: stok uyarısı kartı, risk motorunun görmediği durumları
+     * (düşük, negatif, bilinmeyen stok) da göstermek zorunda ve bunlar
+     * `ProductPerformance`den — maliyetten değil — türüyor. `/products`
+     * sayfası zaten aynı çağrıyı yapıyor; kokpit onu tekrar kullanıyor.
+     */
+    container.products.getPerformance(range),
   ]);
+
+  /**
+   * Stok tahmini tek yerde hesaplanır (`buildStockForecasts`) ve hem
+   * uyarı listesi hem de — ürün sayfasına gidildiğinde — tablo aynı
+   * çıktıyı okur; burada yeniden hesaplanmaz.
+   */
+  const stockForecasts = buildStockForecasts(productPerformance, range);
+  const stockAlerts = buildStockAlerts(productPerformance, stockForecasts);
 
   const [t, common, comparisonMessages] = await Promise.all([
     getTranslations("cockpit"),
@@ -287,6 +306,20 @@ export async function CockpitPage({
             </div>
           </SectionCard>
         </div>
+
+        {/*
+          STOK UYARILARI — ürün tablosundaki tahminin operasyon karşılığı.
+          Risk motorunun ürettiği `STOCKOUT_IMMINENT` yalnızca maliyeti bilinen
+          ve kritik eşiğin altındaki ürünleri kapsar; burası düşük, negatif ve
+          bilinmeyen stok durumlarını da gösterir.
+        */}
+        <StockAlertsCard
+          alerts={stockAlerts}
+          windowDays={stockForecasts.windowDays}
+          hasData={productPerformance.length > 0}
+          locale={locale}
+          selection={selection}
+        />
 
         {/* 5 — KAPANIŞ. Günün işi bittikten sonra okunacak not. */}
         <DayLedger today={today} locale={locale} />
