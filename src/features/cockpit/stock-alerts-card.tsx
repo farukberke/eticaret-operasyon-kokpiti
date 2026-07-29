@@ -28,6 +28,8 @@ import { SectionCard } from "@/ui/patterns/section-card";
 
 import { buildMorningBriefTexts } from "./morning-brief-view";
 import { MorningBriefSummary } from "./morning-brief-summary.client";
+import { NotificationCenter } from "./notification-center.client";
+import { buildNotificationCenterTexts } from "./notification-center-view";
 import {
   buildPurchaseActionPlanTexts,
   toPurchaseActionPlanRowViews,
@@ -155,6 +157,7 @@ export function StockAlertsCard({
   const morningBrief = useTranslations("morningBrief");
   const taskTimeline = useTranslations("taskTimeline");
   const smartInsights = useTranslations("smartInsights");
+  const notificationCenter = useTranslations("notificationCenter");
 
   const coverageTexts = buildStockCoverageTexts(products);
   const texts = buildStockAlertTexts(t, coverageTexts);
@@ -192,6 +195,10 @@ export function StockAlertsCard({
   const morningBriefTexts = buildMorningBriefTexts(morningBrief);
   const taskTimelineTexts = buildTaskTimelineTexts(taskTimeline);
   const smartInsightsTexts = buildSmartInsightsTexts(smartInsights);
+  const notificationCenterTexts = buildNotificationCenterTexts(
+    notificationCenter,
+    smartInsights,
+  );
   /**
    * Ürün kimliğine göre ad haritası — `views`den (zaten `toStockAlertViews`
    * tarafından çevrilmiş) kurulur, ikinci bir çeviri yapılmaz. Task Timeline
@@ -238,6 +245,20 @@ export function StockAlertsCard({
               actionPlan={actionPlan}
               locale={locale}
               texts={smartInsightsTexts}
+              productNames={productNames}
+            />
+
+            {/*
+              UYARI MERKEZİ — Akıllı İçgörüler'in "neden dikkat etmeliyim"
+              yorumundan sonra, Günlük Zaman Akışı'ndan önce durur: hazır plan/
+              durum verisindeki dikkat gerektiren durumların tek merkezde,
+              öncelik sırasıyla toplanmış kısa listesi. Yeni bir hesap yapmaz,
+              yalnızca mevcut planı ve durumu sınıflandırır.
+            */}
+            <NotificationCenter
+              actionPlan={actionPlan}
+              locale={locale}
+              texts={notificationCenterTexts}
               productNames={productNames}
             />
 

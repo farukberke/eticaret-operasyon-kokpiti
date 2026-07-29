@@ -1244,4 +1244,250 @@ describe("kokpit stok uyarısı kartı", () => {
       ).toBeDefined();
     });
   });
+
+  describe("Uyarı Merkezi (Notification Center)", () => {
+    function centerSection(): HTMLElement {
+      return screen.getByTestId("notification-center");
+    }
+
+    function notificationActionItem(
+      overrides: Partial<ActionPlanItem> = {},
+    ): ActionPlanItem {
+      return {
+        productId: "p1",
+        rank: 1,
+        action: "actNow",
+        recommendedQuantity: null,
+        alertState: "critical",
+        leadTimeState: "late",
+        daysRemaining: 5,
+        orderDecisionDays: -2,
+        shortageGapDays: 2,
+        reason: "leadTimeAlreadyLate",
+        ...overrides,
+      };
+    }
+
+    /** `count` adet sakin (planSoon, low) aktif ürün — yalnızca operationsClear tetikler. */
+    function calmNotificationSet(count: number) {
+      const alerts = Array.from({ length: count }, (_, i) =>
+        alert({
+          productId: `p${i + 1}`,
+          productName: `Ürün ${i + 1}`,
+          level: "low",
+          daysRemaining: 20,
+        }),
+      );
+      const items = Array.from({ length: count }, (_, i) =>
+        notificationActionItem({
+          productId: `p${i + 1}`,
+          rank: i + 1,
+          action: "planSoon",
+          alertState: "low",
+          leadTimeState: "safe",
+        }),
+      );
+      return { alerts, actionPlan: actionPlanBatch(items) };
+    }
+
+    it("bölüm görünür: başlık ve alt başlık basılır, Morning Brief/Smart Insights/Task Timeline/Purchase Action Plan bozulmadan yanında durur", () => {
+      const { alerts, actionPlan } = calmNotificationSet(1);
+      renderCard(alerts, { actionPlan });
+
+      expect(
+        within(centerSection()).getByText(tr.notificationCenter.title),
+      ).toBeDefined();
+      expect(
+        within(centerSection()).getByText(tr.notificationCenter.subtitle),
+      ).toBeDefined();
+      expect(screen.getByText(tr.morningBrief.title)).toBeDefined();
+      expect(screen.getByText(tr.smartInsights.title)).toBeDefined();
+      expect(screen.getByText(tr.taskTimeline.title)).toBeDefined();
+      expect(rows()).toHaveLength(1);
+    });
+
+    it("kritik satın alma aksiyonu: pending + actNow ürün Kritik rozetiyle görünür, ürün adını taşır", () => {
+      renderCard(
+        [alert({ productId: "p1", productName: "Acil Ürün", level: "critical" })],
+        {
+          actionPlan: actionPlanBatch([notificationActionItem({ productId: "p1" })]),
+        },
+      );
+
+      const section = centerSection();
+      expect(
+        within(section).getByText(tr.notificationCenter.item.criticalAction.title),
+      ).toBeDefined();
+      expect(within(section).getByText(/Acil Ürün/)).toBeDefined();
+      expect(
+        within(section).getByText(tr.smartInsights.severity.critical),
+      ).toBeDefined();
+    });
+
+    it("tedarik süresi riski: actNow olmayan ama late/dueToday olan ürün Dikkat rozetiyle görünür", () => {
+      renderCard(
+        [alert({ productId: "p1", productName: "Riskli Ürün", level: "low" })],
+        {
+          actionPlan: actionPlanBatch([
+            notificationActionItem({
+              productId: "p1",
+              action: "decideToday",
+              leadTimeState: "dueToday",
+            }),
+          ]),
+        },
+      );
+
+      const section = centerSection();
+      expect(
+        within(section).getByText(tr.notificationCenter.item.leadTimeRisk.title),
+      ).toBeDefined();
+      expect(within(section).getByText(/Riskli Ürün/)).toBeDefined();
+      expect(
+        within(section).getByText(tr.smartInsights.severity.warning),
+      ).toBeDefined();
+    });
+
+    it("ertelenmiş görev: 'Ertele' tıklanınca snoozedAction bildirimi görünür", () => {
+      const { alerts, actionPlan } = calmNotificationSet(1);
+      renderCard(alerts, { actionPlan });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.snooze,
+        }),
+      );
+
+      const section = centerSection();
+      expect(
+        within(section).getByText(tr.notificationCenter.item.snoozedAction.title),
+      ).toBeDefined();
+      expect(within(section).getByText(/1 görev ertelendi/)).toBeDefined();
+    });
+
+    it("tamamlanan görev: 'Yapıldı' tıklanınca completedAction bildirimi Olumlu rozetiyle görünür", () => {
+      const { alerts, actionPlan } = calmNotificationSet(1);
+      renderCard(alerts, { actionPlan });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.done,
+        }),
+      );
+
+      const section = centerSection();
+      expect(
+        within(section).getByText(tr.notificationCenter.item.completedAction.title),
+      ).toBeDefined();
+      expect(
+        within(section).getByText(tr.smartInsights.severity.positive),
+      ).toBeDefined();
+    });
+
+    it("operasyon net: kritik/uyarı yoksa ve aktif aksiyon sayısı düşükse 'Tüm operasyonlar kontrol altında' görünür", () => {
+      const { alerts, actionPlan } = calmNotificationSet(1);
+      renderCard(alerts, { actionPlan });
+
+      const section = centerSection();
+      expect(
+        within(section).getByText(tr.notificationCenter.item.operationsClear.title),
+      ).toBeDefined();
+      expect(
+        within(section).getByText(tr.smartInsights.severity.neutral),
+      ).toBeDefined();
+    });
+
+    it("boş durum: actionPlan verilmezse (eski davranış) sakin bir metin gösterilir", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })]);
+
+      expect(screen.getByText(tr.notificationCenter.empty)).toBeDefined();
+    });
+
+    it("yoksayılan aksiyondan bildirim üretilmez: tek aksiyon yoksayılınca 'operasyon kontrol altında' olarak kalır", () => {
+      const { alerts, actionPlan } = calmNotificationSet(1);
+      renderCard(alerts, { actionPlan });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.ignore,
+        }),
+      );
+
+      const section = centerSection();
+      expect(
+        within(section).getByText(tr.notificationCenter.item.operationsClear.title),
+      ).toBeDefined();
+    });
+
+    it("aynı bildirim iki kez render edilmez", () => {
+      renderCard(
+        [alert({ productId: "p1", productName: "Acil Ürün", level: "critical" })],
+        { actionPlan: actionPlanBatch([notificationActionItem({ productId: "p1" })]) },
+      );
+
+      const section = centerSection();
+      expect(
+        within(section).getAllByText(tr.notificationCenter.item.criticalAction.title),
+      ).toHaveLength(1);
+    });
+
+    it("bildirim sayısına göre bir aktif sayaç gösterilir, 'okunmadı' olarak etiketlenmez", () => {
+      renderCard(
+        [alert({ productId: "p1", productName: "Acil Ürün", level: "critical" })],
+        { actionPlan: actionPlanBatch([notificationActionItem({ productId: "p1" })]) },
+      );
+
+      const section = centerSection();
+      expect(
+        within(section).getByText(`${tr.notificationCenter.activeCountLabel}: 1`),
+      ).toBeDefined();
+      expect(section.textContent?.toLowerCase()).not.toMatch(/unread|okunmadı/);
+    });
+
+    it("sahte bir zaman damgası (ör. 'dakika önce', saat) hiç gösterilmez", () => {
+      renderCard(
+        [alert({ productId: "p1", productName: "Acil Ürün", level: "critical" })],
+        { actionPlan: actionPlanBatch([notificationActionItem({ productId: "p1" })]) },
+      );
+
+      const section = centerSection();
+      expect(section.textContent).not.toMatch(/dakika önce|saat önce|\d{2}:\d{2}/);
+    });
+
+    it("status değiştiğinde Notification Center aynı provider üzerinden güncellenir", () => {
+      const { alerts, actionPlan } = calmNotificationSet(1);
+      renderCard(alerts, { actionPlan });
+
+      const section = centerSection();
+      expect(
+        within(section).getByText(tr.notificationCenter.item.operationsClear.title),
+      ).toBeDefined();
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.done,
+        }),
+      );
+
+      expect(
+        within(section).getByText(tr.notificationCenter.item.completedAction.title),
+      ).toBeDefined();
+    });
+
+    it("İngilizce: başlık ve bildirim metinleri çeviridir", () => {
+      renderCard(
+        [alert({ productId: "p1", productName: "Acil Ürün", level: "critical" })],
+        {
+          actionPlan: actionPlanBatch([notificationActionItem({ productId: "p1" })]),
+          locale: "en",
+        },
+      );
+
+      const section = centerSection();
+      expect(within(section).getByText(en.notificationCenter.title)).toBeDefined();
+      expect(
+        within(section).getByText(en.notificationCenter.item.criticalAction.title),
+      ).toBeDefined();
+    });
+  });
 });

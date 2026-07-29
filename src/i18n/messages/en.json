@@ -332,6 +332,35 @@
       }
     }
   },
+  "notificationCenter": {
+    "title": "Notification Center",
+    "subtitle": "Operational Notifications",
+    "empty": "No active notifications right now.",
+    "activeCountLabel": "Active notifications",
+    "moreNotifications": "+{count} more notifications",
+    "item": {
+      "criticalAction": {
+        "title": "Critical purchase action",
+        "description": "{productName} needs an urgent purchase action."
+      },
+      "leadTimeRisk": {
+        "title": "Lead time risk",
+        "description": "{productName} is exposed to lead time risk."
+      },
+      "snoozedAction": {
+        "title": "Snoozed task",
+        "description": "{count} tasks were snoozed."
+      },
+      "completedAction": {
+        "title": "Completed task",
+        "description": "{count} tasks were completed."
+      },
+      "operationsClear": {
+        "title": "All operations under control",
+        "description": "No active notifications need attention right now."
+      }
+    }
+  },
   "purchasePriority": {
     "rankBadge": "Priority #{rank}",
     "impact": {

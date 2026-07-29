@@ -332,6 +332,35 @@
       }
     }
   },
+  "notificationCenter": {
+    "title": "Uyarı Merkezi",
+    "subtitle": "Operasyon Bildirimleri",
+    "empty": "Şu anda aktif bildirim bulunmuyor.",
+    "activeCountLabel": "Aktif bildirimler",
+    "moreNotifications": "+{count} bildirim daha",
+    "item": {
+      "criticalAction": {
+        "title": "Kritik satın alma aksiyonu",
+        "description": "{productName} ürünü için acil satın alma aksiyonu gerekiyor."
+      },
+      "leadTimeRisk": {
+        "title": "Tedarik süresi riski",
+        "description": "{productName} ürünü tedarik süresi riski taşıyor."
+      },
+      "snoozedAction": {
+        "title": "Ertelenmiş görev",
+        "description": "{count} görev ertelendi."
+      },
+      "completedAction": {
+        "title": "Tamamlanan görev",
+        "description": "{count} görev tamamlandı."
+      },
+      "operationsClear": {
+        "title": "Tüm operasyonlar kontrol altında",
+        "description": "Şu anda dikkat gerektiren aktif bildirim bulunmuyor."
+      }
+    }
+  },
   "purchasePriority": {
     "rankBadge": "Öncelik #{rank}",
     "impact": {
