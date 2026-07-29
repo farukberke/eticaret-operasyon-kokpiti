@@ -56,7 +56,9 @@ export function createOllamaMorningBriefNarrator(
             model,
             prompt: buildMorningBriefPrompt(input),
             stream: false,
-            options: { temperature: 0.4 },
+            // Düşük sıcaklık: bu bir yaratıcılık işi değil, sayıları cümleye
+            // dökme işi. Yüksek sıcaklık dil kaymasını da besliyordu.
+            options: { temperature: 0.2 },
           }),
           signal: controller.signal,
         });

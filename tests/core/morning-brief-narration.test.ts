@@ -47,8 +47,18 @@ describe("buildMorningBriefPrompt", () => {
   });
 
   it("locale'e göre hedef dili belirtir", () => {
-    expect(buildMorningBriefPrompt(input({ locale: "tr" }))).toContain("Türkçe yaz");
-    expect(buildMorningBriefPrompt(input({ locale: "en" }))).toContain("English yaz");
+    expect(buildMorningBriefPrompt(input({ locale: "tr" }))).toContain("Türkçe");
+    expect(buildMorningBriefPrompt(input({ locale: "en" }))).toContain("English");
+  });
+
+  /**
+   * Dil talimatının tek yerde kalması, modelin onu uzun listenin ortasında
+   * kaybetmesine ve cevabı başka dilde yazmasına yol açmıştı.
+   */
+  it("dil talimatını hem başta hem sonda tekrarlar", () => {
+    const prompt = buildMorningBriefPrompt(input({ locale: "tr" }));
+    const occurrences = prompt.split("Türkçe").length - 1;
+    expect(occurrences).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -69,6 +79,29 @@ describe("sanitizeNarration", () => {
   it("modelin sızdırdığı karakter sayısı notunu keser", () => {
     expect(sanitizeNarration("Bugün 2 iş var. (218 chars)")).toBe("Bugün 2 iş var.");
     expect(sanitizeNarration("Bugün 2 iş var. (45 karakter)")).toBe("Bugün 2 iş var.");
+  });
+
+  /**
+   * CANLIDA GÖRÜLEN HATA — qwen2.5:7b "Türkçe yaz" talimatına rağmen cevabı
+   * Çinceye çevirip prompt'un kural listesini geri yazdı. Ekranda okunamayan
+   * bir metin belirdi. Bu iki test o günü kilitliyor.
+   */
+  it("cevap başka bir alfabeye kayarsa tamamen reddedilir", () => {
+    expect(sanitizeNarration("6 aktivite中有中文翻译")).toBeNull();
+    expect(sanitizeNarration("任务：根据上述信息进行总结")).toBeNull();
+    expect(sanitizeNarration("Сегодня 2 задачи")).toBeNull();
+  });
+
+  it("model prompt'taki talimatı cevap sanıp geri yazarsa reddedilir", () => {
+    expect(sanitizeNarration("Görev: Bu bilgileri tek cümleyle özetle.")).toBeNull();
+    expect(sanitizeNarration("Kurallar: - Sadece verilen sayıları kullan.")).toBeNull();
+    expect(sanitizeNarration("Task: summarize the numbers")).toBeNull();
+  });
+
+  it("Türkçe'ye özgü harfler Latin sayılır, reddedilmez", () => {
+    expect(sanitizeNarration("Bugün 2 iş var; ışığı söndürme, çğüöşİ.")).toBe(
+      "Bugün 2 iş var; ışığı söndürme, çğüöşİ.",
+    );
   });
 
   it("çok uzun cevabı sınırda keser", () => {
