@@ -179,10 +179,24 @@ L 0,672'den 0,655'e çekildi (veri-görselleştirme parlaklık bandı 0,48–0,6
 Diğer kurallar: tek eksen (asla çift y-ekseni), iki seri için efsane zorunlu,
 metin asla seri rengini giymez.
 
+## Sabah özeti — gerçek LLM çağrısı
+
+Tek istisna: `MorningBriefNarratorPort` (`src/core/ports`), yerel bir Ollama
+modeline (`qwen2.5:7b`, `src/data/adapters/local/ollama-morning-brief-narrator.adapter.ts`)
+bağlanıp kural motorunun ürettiği sayıları tek cümlede anlatır.
+
+Bilinçli sınır: model hiçbir karar almaz, hiçbir sayı üretmez — girdisi
+zaten hesaplanmış `MorningBrief` özetidir (`core/services/ai-morning-brief.ts`),
+çıktısı yalnızca o sayıların doğal dile çevirisidir. Prompt kurma ve model
+cevabını temizleme (`core/services/morning-brief-narration.ts`) saf, ağdan
+bağımsız fonksiyonlardır — adapter yalnızca HTTP çağrısını yapar. Model
+ulaşılamaz/zaman aşımına uğrarsa adapter **throw etmez**, deterministik
+`fallbackNarration`a düşer: bu port, dosyanın genelindeki "adapter hata
+durumunda throw eder" kuralının bilinçli istisnasıdır (bkz. port yorumu).
+
 ## v1 kapsamı dışında
 
-Auth · ödeme · gerçek pazaryeri API'si · veritabanı · otomasyon · çok kiracılılık ·
-gerçek LLM çağrısı.
+Auth · ödeme · gerçek pazaryeri API'si · veritabanı · otomasyon · çok kiracılılık.
 
 Her biri için mimaride yer ayrıldı (`ports/`, `app/api/`, `proxy.ts`,
 `container.ts`) ama kod yazılmadı.

@@ -281,6 +281,10 @@
       "leadTimeRisk": "{count} products carry lead time risk.",
       "completedActions": "{count} tasks completed.",
       "snoozedActions": "{count} tasks snoozed."
+    },
+    "aiNarration": {
+      "label": "AI summary",
+      "loading": "Preparing AI summary…"
     }
   },
   "taskTimeline": {

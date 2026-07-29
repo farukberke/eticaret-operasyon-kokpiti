@@ -31,6 +31,7 @@ export interface MorningBriefTexts {
   readonly severity: { readonly critical: string; readonly normal: string };
   readonly allClear: string;
   readonly item: Record<MorningBriefItemKind, string>;
+  readonly aiNarration: { readonly label: string; readonly loading: string };
 }
 
 export function buildMorningBriefTexts(
@@ -54,6 +55,10 @@ export function buildMorningBriefTexts(
         count: COUNT_PLACEHOLDER,
       }),
       snoozedActions: morningBrief("item.snoozedActions", { count: COUNT_PLACEHOLDER }),
+    },
+    aiNarration: {
+      label: morningBrief("aiNarration.label"),
+      loading: morningBrief("aiNarration.loading"),
     },
   };
 }

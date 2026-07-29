@@ -48,3 +48,18 @@ export interface MorningBrief {
   /** Aktif aksiyon yoksa `null`. */
   readonly focus: MorningBriefFocus | null;
 }
+
+/**
+ * SABAH ÖZETİ → DOĞAL DİL ANLATIMI (LLM girdisi).
+ *
+ * `MorningBriefNarratorPort`e verilen sözleşme: yalnızca zaten hesaplanmış
+ * sayılar ve zaten çevrilmiş metinler taşınır (`focus.actionLabel/reasonText`
+ * `PurchaseActionPlanRowView`den geldiği gibi kullanılır — burada ikinci bir
+ * çeviri üretilmez). Model bu sayılardan yeni bir sayı türetemez, yalnızca
+ * onları tek cümlede birleştirir.
+ */
+export interface MorningBriefNarrationInput {
+  readonly locale: "tr" | "en";
+  readonly summary: MorningBriefSummary;
+  readonly focus: { readonly actionLabel: string; readonly reasonText: string } | null;
+}

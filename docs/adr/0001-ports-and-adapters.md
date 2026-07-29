@@ -36,7 +36,9 @@ servislere verip gerçek hesabı yaptırır.
 - Karar motoru saf fonksiyonlardan oluştuğu için test edilmesi ucuz: 109 testin
   neredeyse tamamı ağ, DOM veya veritabanı olmadan milisaniyeler içinde koşuyor.
 - Aynı motor, ileride LLM tabanlı bir `PriorityPort` uygulamasıyla yan yana
-  yaşayabilir; arayüz farkı görmez.
+  yaşayabilir; arayüz farkı görmez. Desen zaten doğrulandı:
+  `MorningBriefNarratorPort` yerel bir Ollama modeline bağlanıyor, kural
+  motoruna hiç dokunmadan (bkz. `docs/architecture.md`).
 
 **Olumsuz / maliyet**
 

@@ -1,5 +1,6 @@
 import type { DateRange, IsoDate } from "../domain/date-range";
 import type { ProfitSummary, SalesSummary } from "../domain/metrics";
+import type { MorningBriefNarrationInput } from "../domain/morning-brief";
 import type { PriorityAction } from "../domain/priority";
 import type { ProductPerformance } from "../domain/product";
 import type {
@@ -139,4 +140,22 @@ export interface PurchaseActionStatusPort {
   save(record: PurchaseActionStatusRecord): Promise<void>;
   /** Tüm kayıtları temizler — yalnızca test/geliştirme amaçlı. */
   reset(): Promise<void>;
+}
+
+/**
+ * Sabah özetini doğal dile çeviren LLM sözleşmesi.
+ *
+ * Girdi tamamen deterministik `MorningBrief` özetidir — model hiçbir sayıyı
+ * kendisi üretmez, yalnızca zaten hesaplanmış sayıları tek cümlede birleştirir.
+ *
+ * Bu port, dosyanın başındaki genel hata sözleşmesinin **bilinçli istisnası**:
+ * diğer adapter'lar hata durumunda throw eder, bu **etmez**. Sebep: bu satır
+ * zaten eksiksiz olan deterministik özetin üzerine binen bir gösteriş katmanı
+ * (bkz. `MorningBriefSummary`teki sayılı satırlar) — model ulaşılamazsa ya da
+ * zaman aşımına uğrarsa adapter `core/services/morning-brief-narration`daki
+ * `fallbackNarration`a düşer, ekran hiçbir zaman boş ya da hata halinde
+ * kalmaz.
+ */
+export interface MorningBriefNarratorPort {
+  narrate(input: MorningBriefNarrationInput): Promise<string>;
 }

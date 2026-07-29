@@ -281,6 +281,10 @@
       "leadTimeRisk": "{count} ürün tedarik süresi riski taşıyor.",
       "completedActions": "{count} görev tamamlandı.",
       "snoozedActions": "{count} görev ertelendi."
+    },
+    "aiNarration": {
+      "label": "AI özeti",
+      "loading": "AI özeti hazırlanıyor…"
     }
   },
   "taskTimeline": {

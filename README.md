@@ -74,6 +74,25 @@ Her öncelik **gerekçesini taşır**: _"günde 15,4 adet satıyor · 28 adet ka
 
 Tüm eşikler tek dosyada: `src/core/services/rules.config.ts`.
 
+## Sabah özeti — gerçek LLM entegrasyonu
+
+Kokpitteki "Sabah Özeti" kartı, kural motorunun ürettiği sayıları
+(`buildMorningBrief`) yerel bir LLM'e (Ollama, varsayılan model `qwen2.5:7b`)
+tek cümlede anlattırır. Mimari kasıtlı olarak dar:
+
+- Model **hiçbir karar almaz, hiçbir sayı üretmez** — girdisi zaten
+  hesaplanmış özet, çıktısı yalnızca onun doğal dile çevirisi.
+- Prompt kurma ve model cevabını temizleme (`core/services/morning-brief-narration.ts`)
+  saf fonksiyonlardır, ağdan bağımsız test edilir.
+- Ollama ulaşılamazsa/zaman aşımına uğrarsa (`src/data/adapters/local/ollama-morning-brief-narrator.adapter.ts`)
+  **throw etmez**, deterministik bir şablon cümleye düşer — kart hiçbir zaman
+  boş ya da hata halinde kalmaz.
+
+Yerelde çalıştırmak için [Ollama](https://ollama.com) kurulu ve
+`ollama serve` ayakta olmalı; `OLLAMA_HOST` / `OLLAMA_MODEL` ortam
+değişkenleriyle yapılandırılabilir. Ollama yoksa kart yine çalışır, yalnızca
+şablon cümleyi gösterir.
+
 ## Veri
 
 v1'de gerçek API yok. Veri, **tohumlu** (deterministik) bir üreticiden gelir:
@@ -93,4 +112,5 @@ kod yazılmadı.
 ## Teknolojiler
 
 Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS v4 ·
-Radix primitives · Recharts · next-intl · Vitest · ESLint + eslint-plugin-boundaries
+Radix primitives · Recharts · next-intl · Vitest · ESLint + eslint-plugin-boundaries ·
+Ollama (yerel LLM)

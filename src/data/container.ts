@@ -7,6 +7,7 @@ import {
 import type {
   ClockPort,
   CostInsightPort,
+  MorningBriefNarratorPort,
   PriorityPort,
   ProductPort,
   ProfitPort,
@@ -14,6 +15,7 @@ import type {
   SignalPort,
 } from "@/core/ports";
 
+import { createOllamaMorningBriefNarrator } from "./adapters/local/ollama-morning-brief-narrator.adapter";
 import {
   loadCostSource,
   mockClock,
@@ -50,6 +52,7 @@ export interface Container {
   readonly signals: SignalPort;
   readonly priorities: PriorityPort;
   readonly costInsights: CostInsightPort;
+  readonly morningBriefNarrator: MorningBriefNarratorPort;
 }
 
 export const container: Container = {
@@ -60,6 +63,14 @@ export const container: Container = {
   signals: mockSignalPort,
   priorities: mockPriorityPort,
   costInsights: mockCostInsightPort,
+  /**
+   * Diğer portlardan farklı olarak mock değil — gerçek bir yerel LLM'e
+   * (Ollama) bağlanıyor. `v1`in "gerçek API yok" kuralı pazaryeri
+   * entegrasyonu içindir; bu port zaten hiçbir işlem/para kararı almıyor,
+   * yalnızca zaten hesaplanmış sayıları anlatıyor ve ulaşılamazsa
+   * deterministik şablona düşüyor (bkz. port yorumu).
+   */
+  morningBriefNarrator: createOllamaMorningBriefNarrator(),
 };
 
 /**

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { IsoDate } from "@/core/domain";
 import type {
@@ -23,6 +23,19 @@ import en from "@/i18n/messages/en.json";
 import tr from "@/i18n/messages/tr.json";
 
 import { installMemoryStorage } from "../data/memory-storage";
+
+/**
+ * AI ANLATIMI sunucu eylemi taklit ediliyor — `CostHistory` testlerindeki
+ * gerekçenin aynısı: burada sorulan soru gerçek bir LLM'in ne yazdığı değil,
+ * bileşenin yükleniyor → geldi geçişini doğru yönetip yönetmediği.
+ */
+const { narrateMorningBrief } = vi.hoisted(() => ({
+  narrateMorningBrief: vi.fn(),
+}));
+
+vi.mock("@/features/cockpit/morning-brief-narration-actions", () => ({
+  narrateMorningBrief,
+}));
 
 /**
  * SABAH ÖZETİ KARTI — `StockAlertsCard`in içindeki `PurchaseActionStatusProvider`
@@ -157,6 +170,8 @@ function MorningBriefTexts({
 
 beforeEach(() => {
   installMemoryStorage();
+  narrateMorningBrief.mockReset();
+  narrateMorningBrief.mockResolvedValue("AI test cümlesi.");
 });
 
 afterEach(cleanup);
@@ -219,5 +234,39 @@ describe("Sabah Özeti kartı", () => {
     renderBrief(planOf([planItem()]), { locale: "en" });
     expect(screen.getByText(en.morningBrief.title)).toBeDefined();
     expect(screen.getByText(en.morningBrief.severity.critical)).toBeDefined();
+  });
+});
+
+describe("Sabah Özeti — AI anlatımı", () => {
+  it("aktif aksiyon varken önce yükleniyor metnini, sonra AI cümlesini gösterir", async () => {
+    renderBrief(planOf([planItem({ productId: "p1" })]));
+
+    expect(screen.getByText(tr.morningBrief.aiNarration.loading)).toBeDefined();
+    expect(await screen.findByText("AI test cümlesi.")).toBeDefined();
+    expect(narrateMorningBrief).toHaveBeenCalledTimes(1);
+  });
+
+  it("plan boşken AI eylemi hiç çağrılmaz — anlatılacak bir şey yok", () => {
+    renderBrief(planOf([]));
+    expect(narrateMorningBrief).not.toHaveBeenCalled();
+  });
+
+  it("AI eylemi reddedilirse sessizce yükleniyor metninde kalır, ekran çökmez", async () => {
+    narrateMorningBrief.mockReset();
+    narrateMorningBrief.mockRejectedValue(new Error("network"));
+
+    renderBrief(planOf([planItem({ productId: "p1" })]));
+
+    await waitFor(() => expect(narrateMorningBrief).toHaveBeenCalledTimes(1));
+    expect(screen.getByText(tr.morningBrief.aiNarration.loading)).toBeDefined();
+  });
+
+  it("'Yapıldı' tıklanınca özet sayıları değişince AI eylemi yeniden çağrılır", async () => {
+    renderBrief(planOf([planItem({ productId: "p1" })]));
+    await waitFor(() => expect(narrateMorningBrief).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "test-mark-done" }));
+
+    await waitFor(() => expect(narrateMorningBrief).toHaveBeenCalledTimes(2));
   });
 });
