@@ -27,6 +27,16 @@ const SEVERITY_TONE: Record<SmartInsightSeverity, BadgeTone> = {
   neutral: "neutral",
 };
 
+/**
+ * Sayı/ürün adı yerini tutan işaretçiler. `buildSmartInsightsTexts` şablonu
+ * bu değerlerle doldurur, `descriptionFor` gerçek değeri `.replace` ile
+ * yerleştirir — satır metni yalnızca Client Component'te, kullanıcının
+ * kararına bağlı sayı bilindiğinde tamamlanır. Fonksiyon değil düz metin
+ * taşındığı için bu obje sunucu→istemci sınırını geçebilir.
+ */
+const COUNT_PLACEHOLDER = "__COUNT__";
+const PRODUCT_NAME_PLACEHOLDER = "__PRODUCT_NAME__";
+
 export interface SmartInsightsTexts {
   readonly title: string;
   readonly subtitle: string;
@@ -34,12 +44,12 @@ export interface SmartInsightsTexts {
   readonly severity: Record<SmartInsightSeverity, string>;
   readonly itemTitle: Record<SmartInsightType, string>;
   readonly description: {
-    readonly criticalStockPressure: (count: string) => string;
-    readonly leadTimeExposure: (count: string) => string;
-    readonly urgentPurchaseFocus: (productName: string) => string;
-    readonly snoozedActionBacklog: (count: string) => string;
-    readonly executionProgress: (count: string) => string;
-    readonly operationsClear: () => string;
+    readonly criticalStockPressure: string;
+    readonly leadTimeExposure: string;
+    readonly urgentPurchaseFocus: string;
+    readonly snoozedActionBacklog: string;
+    readonly executionProgress: string;
+    readonly operationsClear: string;
   };
 }
 
@@ -65,17 +75,22 @@ export function buildSmartInsightsTexts(
       operationsClear: smartInsights("item.operationsClear.title"),
     },
     description: {
-      criticalStockPressure: (count) =>
-        smartInsights("item.criticalStockPressure.description", { count }),
-      leadTimeExposure: (count) =>
-        smartInsights("item.leadTimeExposure.description", { count }),
-      urgentPurchaseFocus: (productName) =>
-        smartInsights("item.urgentPurchaseFocus.description", { productName }),
-      snoozedActionBacklog: (count) =>
-        smartInsights("item.snoozedActionBacklog.description", { count }),
-      executionProgress: (count) =>
-        smartInsights("item.executionProgress.description", { count }),
-      operationsClear: () => smartInsights("item.operationsClear.description"),
+      criticalStockPressure: smartInsights("item.criticalStockPressure.description", {
+        count: COUNT_PLACEHOLDER,
+      }),
+      leadTimeExposure: smartInsights("item.leadTimeExposure.description", {
+        count: COUNT_PLACEHOLDER,
+      }),
+      urgentPurchaseFocus: smartInsights("item.urgentPurchaseFocus.description", {
+        productName: PRODUCT_NAME_PLACEHOLDER,
+      }),
+      snoozedActionBacklog: smartInsights("item.snoozedActionBacklog.description", {
+        count: COUNT_PLACEHOLDER,
+      }),
+      executionProgress: smartInsights("item.executionProgress.description", {
+        count: COUNT_PLACEHOLDER,
+      }),
+      operationsClear: smartInsights("item.operationsClear.description"),
     },
   };
 }
@@ -112,25 +127,30 @@ function descriptionFor(
 ): string {
   switch (insight.type) {
     case "criticalStockPressure":
-      return texts.description.criticalStockPressure(
+      return texts.description.criticalStockPressure.replace(
+        COUNT_PLACEHOLDER,
         formatNumber(insight.evidence.count, locale),
       );
     case "leadTimeExposure":
-      return texts.description.leadTimeExposure(
+      return texts.description.leadTimeExposure.replace(
+        COUNT_PLACEHOLDER,
         formatNumber(insight.evidence.count, locale),
       );
     case "snoozedActionBacklog":
-      return texts.description.snoozedActionBacklog(
+      return texts.description.snoozedActionBacklog.replace(
+        COUNT_PLACEHOLDER,
         formatNumber(insight.evidence.count, locale),
       );
     case "executionProgress":
-      return texts.description.executionProgress(
+      return texts.description.executionProgress.replace(
+        COUNT_PLACEHOLDER,
         formatNumber(insight.evidence.count, locale),
       );
     case "operationsClear":
-      return texts.description.operationsClear();
+      return texts.description.operationsClear;
     case "urgentPurchaseFocus":
-      return texts.description.urgentPurchaseFocus(
+      return texts.description.urgentPurchaseFocus.replace(
+        PRODUCT_NAME_PLACEHOLDER,
         (insight.productId ? productNames.get(insight.productId) : undefined) ?? "",
       );
   }

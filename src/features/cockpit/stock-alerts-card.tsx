@@ -287,7 +287,9 @@ export function StockAlertsCard({
               gösterilir — kart bozulmaz, mevcut boş durumla çelişmez.
             */}
             <div className="border-border bg-surface-muted rounded-lg border p-3">
-              <p className="text-fg text-xs font-semibold">{actionPlanSummary.title}</p>
+              <h3 className="text-fg text-xs font-semibold">
+                {actionPlanSummary.title}
+              </h3>
               {actionPlanSummary.hasActions ? (
                 <ul className="text-fg-muted mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
                   {actionPlanSummary.rows.map((row) => (

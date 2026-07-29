@@ -58,7 +58,7 @@ export function NotificationCenter({
       data-testid="notification-center"
     >
       <div className="flex flex-wrap items-baseline gap-2">
-        <p className="text-fg text-xs font-semibold">{view.title}</p>
+        <h3 className="text-fg text-xs font-semibold">{view.title}</h3>
         <span className="text-fg-subtle text-xs">{view.subtitle}</span>
         {view.hasNotifications ? (
           <span className="text-fg-subtle text-xs">{view.activeCountText}</span>

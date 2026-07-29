@@ -53,7 +53,7 @@ export function SmartInsights({
       data-testid="smart-insights"
     >
       <div className="flex flex-wrap items-baseline gap-2">
-        <p className="text-fg text-xs font-semibold">{view.title}</p>
+        <h3 className="text-fg text-xs font-semibold">{view.title}</h3>
         <span className="text-fg-subtle text-xs">{view.subtitle}</span>
       </div>
 

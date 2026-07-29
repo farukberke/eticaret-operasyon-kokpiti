@@ -1490,4 +1490,96 @@ describe("kokpit stok uyarısı kartı", () => {
       ).toBeDefined();
     });
   });
+
+  describe("erişilebilirlik: bölüm başlıkları", () => {
+    it("kart h2, dört alt bölüm (Sabah Özeti/İçgörüler/Uyarı Merkezi/Zaman Akışı) h3 başlık kullanır", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })], {
+        actionPlan: actionPlanBatch([
+          {
+            productId: "p1",
+            rank: 1,
+            action: "actNow",
+            recommendedQuantity: null,
+            alertState: "critical",
+            leadTimeState: "late",
+            daysRemaining: 5,
+            orderDecisionDays: -2,
+            shortageGapDays: 2,
+            reason: "leadTimeAlreadyLate",
+          },
+        ]),
+      });
+
+      expect(
+        screen.getByRole("heading", {
+          level: 2,
+          name: new RegExp(`^${tr.stockAlerts.title}`),
+        }),
+      ).toBeDefined();
+      expect(
+        screen.getByRole("heading", { level: 3, name: tr.morningBrief.title }),
+      ).toBeDefined();
+      expect(
+        screen.getByRole("heading", { level: 3, name: tr.smartInsights.title }),
+      ).toBeDefined();
+      expect(
+        screen.getByRole("heading", { level: 3, name: tr.notificationCenter.title }),
+      ).toBeDefined();
+      expect(
+        screen.getByRole("heading", { level: 3, name: tr.taskTimeline.title }),
+      ).toBeDefined();
+    });
+
+    it("her dekoratif ikon aria-hidden taşır", () => {
+      const { container } = renderCard(
+        [alert({ productId: "p1", level: "critical" })],
+        {
+          actionPlan: actionPlanBatch([
+            {
+              productId: "p1",
+              rank: 1,
+              action: "actNow",
+              recommendedQuantity: null,
+              alertState: "critical",
+              leadTimeState: "late",
+              daysRemaining: 5,
+              orderDecisionDays: -2,
+              shortageGapDays: 2,
+              reason: "leadTimeAlreadyLate",
+            },
+          ]),
+        },
+      );
+
+      const icons = container.querySelectorAll("svg");
+      expect(icons.length).toBeGreaterThan(0);
+      for (const icon of icons) {
+        expect(icon.getAttribute("aria-hidden")).toBe("true");
+      }
+    });
+
+    it("durum yalnızca renkle değil, rozet metniyle de anlatılır", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })], {
+        actionPlan: actionPlanBatch([
+          {
+            productId: "p1",
+            rank: 1,
+            action: "actNow",
+            recommendedQuantity: null,
+            alertState: "critical",
+            leadTimeState: "late",
+            daysRemaining: 5,
+            orderDecisionDays: -2,
+            shortageGapDays: 2,
+            reason: "leadTimeAlreadyLate",
+          },
+        ]),
+      });
+
+      // Durum rozeti her zaman metin taşır — renk tek başına anlam taşımaz.
+      expect(
+        screen.getAllByText(tr.stockAlerts.actionPlan.status.pending).length,
+      ).toBeGreaterThan(0);
+    });
+  });
 });

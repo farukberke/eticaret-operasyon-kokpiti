@@ -55,7 +55,7 @@ export function MorningBriefSummary({
   return (
     <div className="border-border bg-surface-muted rounded-lg border p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-fg text-xs font-semibold">{view.title}</p>
+        <h3 className="text-fg text-xs font-semibold">{view.title}</h3>
         <span className="text-fg-subtle text-xs">{view.subtitle}</span>
         {view.hasActivity ? (
           <Badge tone={view.severityTone}>{view.severityLabel}</Badge>

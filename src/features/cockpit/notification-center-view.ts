@@ -33,20 +33,30 @@ const SEVERITY_TONE: Record<OperationalNotificationSeverity, BadgeTone> = {
   neutral: "neutral",
 };
 
+/**
+ * Sayı/ürün adı yerini tutan işaretçiler. `buildNotificationCenterTexts`
+ * şablonu bu değerlerle doldurur, `descriptionFor` gerçek değeri `.replace`
+ * ile yerleştirir — satır metni yalnızca Client Component'te, kullanıcının
+ * kararına bağlı sayı bilindiğinde tamamlanır. Fonksiyon değil düz metin
+ * taşındığı için bu obje sunucu→istemci sınırını geçebilir.
+ */
+const COUNT_PLACEHOLDER = "__COUNT__";
+const PRODUCT_NAME_PLACEHOLDER = "__PRODUCT_NAME__";
+
 export interface NotificationCenterTexts {
   readonly title: string;
   readonly subtitle: string;
   readonly empty: string;
   readonly activeCountLabel: string;
-  readonly moreNotifications: (count: string) => string;
+  readonly moreNotifications: string;
   readonly severity: Record<OperationalNotificationSeverity, string>;
   readonly itemTitle: Record<OperationalNotificationType, string>;
   readonly description: {
-    readonly criticalAction: (productName: string) => string;
-    readonly leadTimeRisk: (productName: string) => string;
-    readonly snoozedAction: (count: string) => string;
-    readonly completedAction: (count: string) => string;
-    readonly operationsClear: () => string;
+    readonly criticalAction: string;
+    readonly leadTimeRisk: string;
+    readonly snoozedAction: string;
+    readonly completedAction: string;
+    readonly operationsClear: string;
   };
 }
 
@@ -59,7 +69,9 @@ export function buildNotificationCenterTexts(
     subtitle: notificationCenter("subtitle"),
     empty: notificationCenter("empty"),
     activeCountLabel: notificationCenter("activeCountLabel"),
-    moreNotifications: (count) => notificationCenter("moreNotifications", { count }),
+    moreNotifications: notificationCenter("moreNotifications", {
+      count: COUNT_PLACEHOLDER,
+    }),
     severity: {
       critical: smartInsights("severity.critical"),
       warning: smartInsights("severity.warning"),
@@ -74,15 +86,19 @@ export function buildNotificationCenterTexts(
       operationsClear: notificationCenter("item.operationsClear.title"),
     },
     description: {
-      criticalAction: (productName) =>
-        notificationCenter("item.criticalAction.description", { productName }),
-      leadTimeRisk: (productName) =>
-        notificationCenter("item.leadTimeRisk.description", { productName }),
-      snoozedAction: (count) =>
-        notificationCenter("item.snoozedAction.description", { count }),
-      completedAction: (count) =>
-        notificationCenter("item.completedAction.description", { count }),
-      operationsClear: () => notificationCenter("item.operationsClear.description"),
+      criticalAction: notificationCenter("item.criticalAction.description", {
+        productName: PRODUCT_NAME_PLACEHOLDER,
+      }),
+      leadTimeRisk: notificationCenter("item.leadTimeRisk.description", {
+        productName: PRODUCT_NAME_PLACEHOLDER,
+      }),
+      snoozedAction: notificationCenter("item.snoozedAction.description", {
+        count: COUNT_PLACEHOLDER,
+      }),
+      completedAction: notificationCenter("item.completedAction.description", {
+        count: COUNT_PLACEHOLDER,
+      }),
+      operationsClear: notificationCenter("item.operationsClear.description"),
     },
   };
 }
@@ -121,27 +137,31 @@ function descriptionFor(
 ): string {
   switch (notification.type) {
     case "criticalAction":
-      return texts.description.criticalAction(
+      return texts.description.criticalAction.replace(
+        PRODUCT_NAME_PLACEHOLDER,
         (notification.productId
           ? productNames.get(notification.productId)
           : undefined) ?? "",
       );
     case "leadTimeRisk":
-      return texts.description.leadTimeRisk(
+      return texts.description.leadTimeRisk.replace(
+        PRODUCT_NAME_PLACEHOLDER,
         (notification.productId
           ? productNames.get(notification.productId)
           : undefined) ?? "",
       );
     case "snoozedAction":
-      return texts.description.snoozedAction(
+      return texts.description.snoozedAction.replace(
+        COUNT_PLACEHOLDER,
         formatNumber(notification.evidence.count, locale),
       );
     case "completedAction":
-      return texts.description.completedAction(
+      return texts.description.completedAction.replace(
+        COUNT_PLACEHOLDER,
         formatNumber(notification.evidence.count, locale),
       );
     case "operationsClear":
-      return texts.description.operationsClear();
+      return texts.description.operationsClear;
   }
 }
 
@@ -183,7 +203,8 @@ export function toNotificationCenterView(
     )}`,
     moreText:
       notificationCenter.summary.hiddenByLimit > 0
-        ? texts.moreNotifications(
+        ? texts.moreNotifications.replace(
+            COUNT_PLACEHOLDER,
             formatNumber(notificationCenter.summary.hiddenByLimit, locale),
           )
         : null,

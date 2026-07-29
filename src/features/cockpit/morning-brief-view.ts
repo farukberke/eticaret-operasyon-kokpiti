@@ -14,6 +14,15 @@ import type { BadgeTone } from "@/ui/primitives/badge";
  * component tarafında yapılmaz.
  */
 
+/**
+ * Sayının yerini tutan işaretçi. `buildMorningBriefTexts` şablonu bu değerle
+ * doldurur (`toMorningBriefView` içindeki `.replace` onu asıl sayıyla
+ * değiştirir); satır metni yalnızca Client Component'te, kullanıcının
+ * kararına bağlı sayı bilindiğinde tamamlanır. Fonksiyon değil düz metin
+ * taşındığı için bu obje sunucu→istemci sınırını geçebilir.
+ */
+const COUNT_PLACEHOLDER = "__COUNT__";
+
 export interface MorningBriefTexts {
   readonly title: string;
   readonly subtitle: string;
@@ -21,7 +30,7 @@ export interface MorningBriefTexts {
   readonly todayTasksLabel: string;
   readonly severity: { readonly critical: string; readonly normal: string };
   readonly allClear: string;
-  readonly item: Record<MorningBriefItemKind, (count: string) => string>;
+  readonly item: Record<MorningBriefItemKind, string>;
 }
 
 export function buildMorningBriefTexts(
@@ -38,11 +47,13 @@ export function buildMorningBriefTexts(
     },
     allClear: morningBrief("allClear"),
     item: {
-      activeActions: (count) => morningBrief("item.activeActions", { count }),
-      criticalStock: (count) => morningBrief("item.criticalStock", { count }),
-      leadTimeRisk: (count) => morningBrief("item.leadTimeRisk", { count }),
-      completedActions: (count) => morningBrief("item.completedActions", { count }),
-      snoozedActions: (count) => morningBrief("item.snoozedActions", { count }),
+      activeActions: morningBrief("item.activeActions", { count: COUNT_PLACEHOLDER }),
+      criticalStock: morningBrief("item.criticalStock", { count: COUNT_PLACEHOLDER }),
+      leadTimeRisk: morningBrief("item.leadTimeRisk", { count: COUNT_PLACEHOLDER }),
+      completedActions: morningBrief("item.completedActions", {
+        count: COUNT_PLACEHOLDER,
+      }),
+      snoozedActions: morningBrief("item.snoozedActions", { count: COUNT_PLACEHOLDER }),
     },
   };
 }
@@ -78,7 +89,10 @@ export function toMorningBriefView(
 ): MorningBriefView {
   const lines: MorningBriefLineView[] = brief.items.map((item) => ({
     kind: item.kind,
-    text: texts.item[item.kind](formatNumber(item.count, locale)),
+    text: texts.item[item.kind].replace(
+      COUNT_PLACEHOLDER,
+      formatNumber(item.count, locale),
+    ),
   }));
 
   const severe = brief.summary.criticalActions > 0;
