@@ -295,6 +295,43 @@
     "emptyActive": "Aktif görev bulunmuyor.",
     "emptyCompleted": "Tamamlanan görev bulunmuyor."
   },
+  "smartInsights": {
+    "title": "Akıllı İçgörüler",
+    "subtitle": "Operasyon İçgörüleri",
+    "empty": "Şu anda önemli bir içgörü bulunmuyor.",
+    "severity": {
+      "critical": "Kritik",
+      "warning": "Dikkat",
+      "positive": "Olumlu",
+      "neutral": "Bilgi"
+    },
+    "item": {
+      "criticalStockPressure": {
+        "title": "Kritik stok baskısı",
+        "description": "{count} kritik satın alma aksiyonu bugün dikkat gerektiriyor."
+      },
+      "leadTimeExposure": {
+        "title": "Tedarik süresi riski",
+        "description": "{count} ürün tedarik süresi riski nedeniyle acil sipariş kararı bekliyor."
+      },
+      "urgentPurchaseFocus": {
+        "title": "Satın alma önceliği",
+        "description": "En yüksek öncelikli aksiyon {productName} ürününe ait."
+      },
+      "snoozedActionBacklog": {
+        "title": "Ertelenmiş görevler",
+        "description": "{count} ertelenmiş görev operasyon akışını bekletiyor."
+      },
+      "executionProgress": {
+        "title": "Günlük ilerleme",
+        "description": "{count} görev tamamlandı; günlük plan ilerliyor."
+      },
+      "operationsClear": {
+        "title": "Operasyon durumu",
+        "description": "Şu anda kritik operasyon riski görünmüyor."
+      }
+    }
+  },
   "purchasePriority": {
     "rankBadge": "Öncelik #{rank}",
     "impact": {

@@ -41,6 +41,8 @@ import {
   buildPurchasePriorityTexts,
   toPurchasePriorityViews,
 } from "./purchase-priority-view";
+import { SmartInsights } from "./smart-insights.client";
+import { buildSmartInsightsTexts } from "./smart-insights-view";
 import { TaskTimeline } from "./task-timeline.client";
 import { buildTaskTimelineTexts } from "./task-timeline-view";
 
@@ -152,6 +154,7 @@ export function StockAlertsCard({
   const priority = useTranslations("purchasePriority");
   const morningBrief = useTranslations("morningBrief");
   const taskTimeline = useTranslations("taskTimeline");
+  const smartInsights = useTranslations("smartInsights");
 
   const coverageTexts = buildStockCoverageTexts(products);
   const texts = buildStockAlertTexts(t, coverageTexts);
@@ -188,6 +191,7 @@ export function StockAlertsCard({
   const actionPlanProductIds = actionPlan.items.map((item) => item.productId);
   const morningBriefTexts = buildMorningBriefTexts(morningBrief);
   const taskTimelineTexts = buildTaskTimelineTexts(taskTimeline);
+  const smartInsightsTexts = buildSmartInsightsTexts(smartInsights);
   /**
    * Ürün kimliğine göre ad haritası — `views`den (zaten `toStockAlertViews`
    * tarafından çevrilmiş) kurulur, ikinci bir çeviri yapılmaz. Task Timeline
@@ -221,6 +225,20 @@ export function StockAlertsCard({
               locale={locale}
               texts={morningBriefTexts}
               actionPlanRowViews={actionPlanRowViews}
+            />
+
+            {/*
+              AKILLI İÇGÖRÜLER — Sabah Özeti'nin "ne durumdayım" cevabından
+              sonra, Günlük Zaman Akışı'ndan önce durur: hazır plan/durum
+              verisindeki örüntülerin ("neden dikkat etmeliyim") kısa,
+              kural tabanlı yorumu. Yeni bir hesap yapmaz, yalnızca mevcut
+              planı ve durumu sınıflandırır.
+            */}
+            <SmartInsights
+              actionPlan={actionPlan}
+              locale={locale}
+              texts={smartInsightsTexts}
+              productNames={productNames}
             />
 
             {/*

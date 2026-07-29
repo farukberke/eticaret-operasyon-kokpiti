@@ -1020,4 +1020,228 @@ describe("kokpit stok uyarısı kartı", () => {
       expect(within(card).getByText(en.taskTimeline.group.now)).toBeDefined();
     });
   });
+
+  describe("Akıllı İçgörüler (Smart Insights)", () => {
+    const CRITICAL_MIN = DEFAULT_RULES.smartInsights.criticalStockPressureMinCount;
+
+    function insightsSection(): HTMLElement {
+      return screen.getByTestId("smart-insights");
+    }
+
+    function insightActionItem(
+      overrides: Partial<ActionPlanItem> = {},
+    ): ActionPlanItem {
+      return {
+        productId: "p1",
+        rank: 1,
+        action: "actNow",
+        recommendedQuantity: null,
+        alertState: "critical",
+        leadTimeState: "late",
+        daysRemaining: 5,
+        orderDecisionDays: -2,
+        shortageGapDays: 2,
+        reason: "leadTimeAlreadyLate",
+        ...overrides,
+      };
+    }
+
+    /** `count` adet sakin (planSoon, low) aktif ürün — yalnızca operationsClear tetikler. */
+    function calmSet(count: number) {
+      const alerts = Array.from({ length: count }, (_, i) =>
+        alert({
+          productId: `p${i + 1}`,
+          productName: `Ürün ${i + 1}`,
+          level: "low",
+          daysRemaining: 20,
+        }),
+      );
+      const items = Array.from({ length: count }, (_, i) =>
+        insightActionItem({
+          productId: `p${i + 1}`,
+          rank: i + 1,
+          action: "planSoon",
+          alertState: "low",
+          leadTimeState: "safe",
+        }),
+      );
+      return { alerts, actionPlan: actionPlanBatch(items) };
+    }
+
+    function criticalSet(count: number) {
+      const alerts = Array.from({ length: count }, (_, i) =>
+        alert({
+          productId: `p${i + 1}`,
+          productName: `Ürün ${i + 1}`,
+          level: "critical",
+          daysRemaining: 3,
+        }),
+      );
+      const items = Array.from({ length: count }, (_, i) =>
+        insightActionItem({
+          productId: `p${i + 1}`,
+          rank: i + 1,
+          alertState: "critical",
+          action: "planSoon",
+        }),
+      );
+      return { alerts, actionPlan: actionPlanBatch(items) };
+    }
+
+    it("bölüm görünür: başlık ve alt başlık basılır, Morning Brief/Task Timeline/Purchase Action Plan bozulmadan yanında durur", () => {
+      const { alerts, actionPlan } = calmSet(1);
+      renderCard(alerts, { actionPlan });
+
+      expect(within(insightsSection()).getByText(tr.smartInsights.title)).toBeDefined();
+      expect(
+        within(insightsSection()).getByText(tr.smartInsights.subtitle),
+      ).toBeDefined();
+      expect(screen.getByText(tr.morningBrief.title)).toBeDefined();
+      expect(screen.getByText(tr.taskTimeline.title)).toBeDefined();
+      expect(rows()).toHaveLength(1);
+    });
+
+    it("kritik içgörü: birden fazla kritik aktif aksiyon varsa Kritik rozetiyle görünür", () => {
+      const { alerts, actionPlan } = criticalSet(CRITICAL_MIN);
+      renderCard(alerts, { actionPlan });
+
+      const section = insightsSection();
+      expect(
+        within(section).getByText(tr.smartInsights.item.criticalStockPressure.title),
+      ).toBeDefined();
+      expect(
+        within(section).getByText(tr.smartInsights.severity.critical),
+      ).toBeDefined();
+    });
+
+    it("uyarı içgörüsü: tedarik süresi riski taşıyan aktif aksiyon varsa Dikkat rozetiyle görünür", () => {
+      const items = [
+        insightActionItem({ productId: "p1", rank: 1, leadTimeState: "late" }),
+      ];
+      renderCard([alert({ productId: "p1", level: "critical", daysRemaining: 3 })], {
+        actionPlan: actionPlanBatch(items),
+      });
+
+      const section = insightsSection();
+      expect(
+        within(section).getByText(tr.smartInsights.item.leadTimeExposure.title),
+      ).toBeDefined();
+      expect(
+        within(section).getByText(tr.smartInsights.severity.warning),
+      ).toBeDefined();
+    });
+
+    it("olumlu içgörü: tamamlanan görev varsa Olumlu rozetiyle görünür", () => {
+      const { alerts, actionPlan } = calmSet(1);
+      renderCard(alerts, { actionPlan });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.done,
+        }),
+      );
+
+      const section = insightsSection();
+      expect(
+        within(section).getByText(tr.smartInsights.item.executionProgress.title),
+      ).toBeDefined();
+      expect(
+        within(section).getByText(tr.smartInsights.severity.positive),
+      ).toBeDefined();
+    });
+
+    it("nötr içgörü: kritik/uyarı yoksa ve aktif aksiyon sayısı düşükse Bilgi rozetiyle 'operasyon net' görünür", () => {
+      const { alerts, actionPlan } = calmSet(1);
+      renderCard(alerts, { actionPlan });
+
+      const section = insightsSection();
+      expect(
+        within(section).getByText(tr.smartInsights.item.operationsClear.title),
+      ).toBeDefined();
+      expect(
+        within(section).getByText(tr.smartInsights.severity.neutral),
+      ).toBeDefined();
+    });
+
+    it("boş durum: actionPlan verilmezse (eski davranış) sakin bir metin gösterilir", () => {
+      renderCard([alert({ productId: "p1", level: "critical" })]);
+
+      expect(screen.getByText(tr.smartInsights.empty)).toBeDefined();
+    });
+
+    it("ignored aksiyondan içgörü üretilmez: yoksayılan tek aksiyon 'operasyon net' olarak kalır", () => {
+      const { alerts, actionPlan } = calmSet(1);
+      renderCard(alerts, { actionPlan });
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.ignore,
+        }),
+      );
+
+      const section = insightsSection();
+      expect(
+        within(section).getByText(tr.smartInsights.item.operationsClear.title),
+      ).toBeDefined();
+    });
+
+    it("aynı içgörü iki kez render edilmez", () => {
+      const { alerts, actionPlan } = criticalSet(CRITICAL_MIN);
+      renderCard(alerts, { actionPlan });
+
+      const section = insightsSection();
+      expect(
+        within(section).getAllByText(tr.smartInsights.item.criticalStockPressure.title),
+      ).toHaveLength(1);
+    });
+
+    it("status değiştiğinde Smart Insights aynı provider üzerinden güncellenir", () => {
+      const { alerts, actionPlan } = calmSet(1);
+      renderCard(alerts, { actionPlan });
+
+      const section = insightsSection();
+      expect(
+        within(section).getByText(tr.smartInsights.item.operationsClear.title),
+      ).toBeDefined();
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: tr.stockAlerts.actionPlan.statusActions.done,
+        }),
+      );
+
+      expect(
+        within(section).getByText(tr.smartInsights.item.executionProgress.title),
+      ).toBeDefined();
+    });
+
+    it("deterministik render: aynı plan/durumla iki render aynı içgörüyü üretir", () => {
+      // Component hesap yapmıyorsa, aynı `actionPlan`/durum iki ayrı
+      // render'da her zaman aynı içgörü metnini üretmeli.
+      const { alerts, actionPlan } = criticalSet(CRITICAL_MIN);
+      renderCard(alerts, { actionPlan });
+      const firstText = within(insightsSection()).getByText(
+        tr.smartInsights.item.criticalStockPressure.title,
+      ).textContent;
+      cleanup();
+
+      renderCard(alerts, { actionPlan });
+      const secondText = within(insightsSection()).getByText(
+        tr.smartInsights.item.criticalStockPressure.title,
+      ).textContent;
+
+      expect(firstText).toBe(secondText);
+    });
+
+    it("İngilizce: başlık ve içgörü metinleri çeviridir", () => {
+      const { alerts, actionPlan } = criticalSet(CRITICAL_MIN);
+      renderCard(alerts, { actionPlan, locale: "en" });
+
+      const section = insightsSection();
+      expect(within(section).getByText(en.smartInsights.title)).toBeDefined();
+      expect(
+        within(section).getByText(en.smartInsights.item.criticalStockPressure.title),
+      ).toBeDefined();
+    });
+  });
 });

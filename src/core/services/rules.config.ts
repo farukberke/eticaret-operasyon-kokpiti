@@ -17,6 +17,7 @@ export interface RulesConfig {
   readonly priority: PriorityRules;
   readonly cost: CostRules;
   readonly taskTimeline: TaskTimelineRules;
+  readonly smartInsights: SmartInsightsRules;
 }
 
 /**
@@ -152,6 +153,25 @@ export interface TaskTimelineRules {
   readonly todayLimit: number;
 }
 
+/**
+ * Akıllı İçgörüler (Smart Insights) eşikleri.
+ *
+ * Bilinçli olarak tek sayı: diğer tüm içgörü kuralları (tedarik süresi
+ * riski, ertelenmiş görev, tamamlanan görev, düşük aktif hacim) zaten mevcut
+ * alanların "var mı/yok mu" ya da mevcut `taskTimeline.nowLimit`
+ * eşiğiyle karşılaştırılmasından çıkıyor — yeni bir sayı gerektirmiyor.
+ */
+export interface SmartInsightsRules {
+  /**
+   * "Kritik stok baskısı" içgörüsü için gereken en az aktif negative/critical
+   * aksiyon sayısı. 1 değil 2: tek bir kritik ürün zaten Sabah Özeti'ndeki
+   * "kritik stok" satırında görünüyor; burada eklenen değer yalnızca
+   * **birden fazla** ürünün aynı anda kritik olduğu, dikkatin dağılabileceği
+   * durumu ayrıca işaretlemek.
+   */
+  readonly criticalStockPressureMinCount: number;
+}
+
 export const DEFAULT_RULES: RulesConfig = {
   inventory: {
     supplyLeadTimeDays: 7,
@@ -199,6 +219,10 @@ export const DEFAULT_RULES: RulesConfig = {
   taskTimeline: {
     nowLimit: 3, // priority.cockpitLimit ile aynı sayı
     todayLimit: 5,
+  },
+
+  smartInsights: {
+    criticalStockPressureMinCount: 2,
   },
 };
 
