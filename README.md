@@ -21,6 +21,8 @@ bozduğu bir cümlenin kullanıcıya gitmesini engellemek ve model tamamen
   model karar zincirinin dışında, sadece anlatıcı.
 - **[Model Çinceye kaydı ve prompt'u geri yazdı](#canlıda-görülen-hata-model-çinceye-kaydı)** —
   gerçek çıktı, gerçek düzeltme.
+- **[Model seçimi tahminle değil ölçümle yapıldı](#model-seçimi-ölçüldü)** —
+  qwen2.5:7b 5'te 4 kez kaydı, llama3.1:8b 5'te 5 temiz.
 - **[Ollama kapalıyken panel ne yapıyor](#ollama-kapalıyken-ne-oluyor)** —
   hata ekranı yok, deterministik cümle var.
 - **[LLM adapter'ı ağa çıkmadan nasıl test ediliyor](#llm-adapterı-nasıl-test-ediliyor)**
@@ -30,7 +32,7 @@ bozduğu bir cümlenin kullanıcıya gitmesini engellemek ve model tamamen
 ## Sabah Özeti — gerçek LLM entegrasyonu
 
 Kokpitteki **Sabah Özeti** kartı, kural motorunun ürettiği sayıları yerel bir
-LLM'e (Ollama, varsayılan `qwen2.5:7b`) tek cümlede anlattırır.
+LLM'e (Ollama, varsayılan `llama3.1:8b`) tek cümlede anlattırır.
 
 ![Sabah Özeti kartı: AI özeti satırı, yerel LLM'in ürettiği tek cümlelik anlatım](./docs/ai-brief-llm.png)
 
@@ -90,6 +92,22 @@ yerine doğru ama sade bir cümle görür.
 Üç test bu günü kilitliyor (`tests/core/morning-brief-narration.test.ts`):
 alfabe kayması, talimat yankısı, ve Türkçe harflerin **yanlışlıkla**
 reddedilmediği.
+
+### Model seçimi ölçüldü
+
+Filtre hatayı yakalıyordu ama panel çoğu zaman şablon cümleyi gösteriyordu —
+yani model pratikte işe yaramıyordu. "Prompt'u biraz daha zorlayalım" demek
+yerine ölçtüm: aynı prompt, aynı sıcaklık (0.2), 5'er deneme.
+
+| Model          | Temiz Türkçe | Not                                              |
+| -------------- | ------------ | ------------------------------------------------ |
+| `qwen2.5:7b`   | **1 / 5**    | 4 denemede `6 aktivite其中有…` diye Çinceye kaydı |
+| `llama3.1:8b`  | **5 / 5**    | tek sapma yok                                    |
+
+Varsayılan `llama3.1:8b` oldu. Model değiştirmek prompt mühendisliğinden ucuz
+çıktı — ama **filtre kaldırılmadı**: bu bir olasılık düşürme işlemidir, garanti
+değil. Ölçüm ve gerekçe kodda da duruyor
+(`src/data/adapters/local/ollama-morning-brief-narrator.adapter.ts`).
 
 ### Ollama kapalıyken ne oluyor
 
@@ -178,13 +196,16 @@ Panel Ollama olmadan da tam çalışır — Sabah Özeti yalnızca şablon cüml
 gösterir. Model çıktısını görmek için:
 
 1. [ollama.com](https://ollama.com) üzerinden Ollama'yı kurun.
-2. Bir model çekin: `ollama pull qwen2.5:7b`
+2. Modeli çekin: `ollama pull llama3.1:8b`
 3. Çalıştığını doğrulayın: `ollama list`
 
 | Değişken       | Varsayılan               | Ne işe yarar               |
 | -------------- | ------------------------ | -------------------------- |
 | `OLLAMA_HOST`  | `http://127.0.0.1:11434` | Ollama sunucusunun adresi  |
-| `OLLAMA_MODEL` | `qwen2.5:7b`             | Kullanılacak model         |
+| `OLLAMA_MODEL` | `llama3.1:8b`            | Kullanılacak model         |
+
+Başka bir model denerseniz Türkçe çıktıda dil kaymasını ölçmeden varsaymayın —
+yukarıdaki tabloya bakın.
 
 Fallback davranışını kendiniz görmek isterseniz `OLLAMA_HOST`u kapalı bir
 porta çevirip paneli açın — yukarıdaki ikinci ekran görüntüsü tam olarak budur.

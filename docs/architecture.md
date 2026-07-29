@@ -182,8 +182,9 @@ metin asla seri rengini giymez.
 ## Sabah özeti — gerçek LLM çağrısı
 
 Tek istisna: `MorningBriefNarratorPort` (`src/core/ports`), yerel bir Ollama
-modeline (`qwen2.5:7b`, `src/data/adapters/local/ollama-morning-brief-narrator.adapter.ts`)
-bağlanıp kural motorunun ürettiği sayıları tek cümlede anlatır.
+modeline (varsayılan `llama3.1:8b`,
+`src/data/adapters/local/ollama-morning-brief-narrator.adapter.ts`) bağlanıp
+kural motorunun ürettiği sayıları tek cümlede anlatır.
 
 Bilinçli sınır: model hiçbir karar almaz, hiçbir sayı üretmez — girdisi
 zaten hesaplanmış `MorningBrief` özetidir (`core/services/ai-morning-brief.ts`),
@@ -193,6 +194,11 @@ bağımsız fonksiyonlardır — adapter yalnızca HTTP çağrısını yapar. Mo
 ulaşılamaz/zaman aşımına uğrarsa adapter **throw etmez**, deterministik
 `fallbackNarration`a düşer: bu port, dosyanın genelindeki "adapter hata
 durumunda throw eder" kuralının bilinçli istisnasıdır (bkz. port yorumu).
+
+Model çıktısı **görüntülenmeden önce reddedilebilir**: Latin dışı bir alfabeden
+tek karakter (dil kayması) ya da prompt'un kendi başlıklarının yankısı görülürse
+cevap bütünüyle atılır ve şablona düşülür. Varsayılan modelin `qwen2.5:7b`den
+`llama3.1:8b`e çekilmesi de bu ölçümün sonucudur — ayrıntı README'de.
 
 ## v1 kapsamı dışında
 

@@ -23,7 +23,19 @@ import {
  */
 
 const DEFAULT_HOST = "http://127.0.0.1:11434";
-const DEFAULT_MODEL = "qwen2.5:7b";
+
+/**
+ * MODEL SEÇİMİ ÖLÇÜLDÜ, TAHMİN EDİLMEDİ.
+ *
+ * Aynı prompt'la 5'er deneme (temperature 0.2, Türkçe çıktı bekleniyor):
+ *   qwen2.5:7b   → 5 denemenin 4'ü Çinceye kaydı ("6 aktivite其中有…")
+ *   llama3.1:8b  → 5/5 temiz Türkçe
+ *
+ * Model değiştirmek prompt'u daha çok zorlamaktan ucuz çıktı. Buna rağmen
+ * `sanitizeNarration`daki dil filtresi kaldırılmadı: bu bir olasılık
+ * düşürme işlemidir, garanti değil.
+ */
+const DEFAULT_MODEL = "llama3.1:8b";
 const REQUEST_TIMEOUT_MS = 8000;
 
 interface OllamaGenerateResponse {
